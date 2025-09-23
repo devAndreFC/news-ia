@@ -1,0 +1,13 @@
+Listagem de caminhos de pasta
+O n£mero de s‚rie do volume ‚ 7E0E-23C8
+C:.
+³   .gitignore
+³   arquivos.txt
+³   docker-compose.yml
+³   estrutura.txt
+³   
+ÀÄÄÄbackend
+        .env
+        Dockerfile
+        requirements.txt
+        

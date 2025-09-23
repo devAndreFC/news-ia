@@ -1,0 +1,113 @@
+Desafio Técnico: Newsletter Inteligente
+1. Qual é a Boa? O Desafio
+Olá! Preparamos esse desafio técnico com o objetivo de conhecer melhor o
+seu raciocínio como desenvolvedor Pleno: como você pensa, escolhe e
+constrói soluções.
+A proposta vai além de um front e back simples, queremos ver você pensando
+em toda a arquitetura da aplicação, incluindo comunicação assíncrona e
+integração com outras ferramentas.
+O que mais nos interessa aqui são suas decisões técnicas:
+Por que escolher determinado banco de dados SQL ou NoSQL? Qual message
+broker você utilizaria e com qual justificativa? Estamos muito interessados em
+entender seu raciocínio por trás dessas escolhas.
+Além do domínio técnico, também vamos observar como você organiza seu
+código, utiliza o Git e documenta o projeto. Boas práticas de engenharia de
+software contam muito!
+Linguagens preferenciais: Python e JavaScript.
+O Essencial vs. Os Extras
+Olha, a gente sabe que parece bastante coisa! Então, para te dar um norte, o
+essencial é ter:
+● Um backend que serve as notícias.
+● Um frontend que mostra essas notícias.
+● O Agente que faz a curadoria das notícias e salva no banco.
+Tudo o que está descrito a mais (como o sistema de login completo, as
+preferências de usuário, a mensageria, o resumo com IA e os testes) é um
+super bônus! Se você entregar o essencial bem feito, já vai ser incrível. O
+resto é para quem quiser brilhar ainda mais.
+2. O Que a Gente Espera de Você
+Dá uma olhada no que esperamos ver em cada parte do projeto.
+a. O Backend (A Cozinha do Projeto)
+A API é o coração de tudo! A gente espera uma API REST bem organizada. O
+mínimo é ter a rota de notícias.
+● Mostrando as Notícias (Essencial):
+o GET /news: A rota principal para buscar as notícias.
+▪ Tem que ter paginação, para não carregar tudo de uma vez.
+▪ Dê a opção de filtrar por período: ?period=day|week|month.
+● Login e Cadastro (Bônus):
+o Uma rota para criar novos usuários (POST /users), pegando nome,
+e-mail e senha. Ah, e por favor, guarde a senha de forma segura
+(usando bcrypt, por exemplo!).
+o Uma rota para fazer o login (POST /login) que devolve um token (tipo
+JWT) se tudo estiver certo.
+o Proteja as rotas que só usuários logados podem acessar.
+● Preferências da Galera (Bônus):
+o GET /preferences: para listar todas as categorias de notícias que
+existem.
+o GET /users/me/preferences: para mostrar as categorias que o usuário
+logado curte.
+o PUT /users/me/preferences: para deixar o usuário mudar o que ele quer
+ver.
+b. O Frontend (A Vitrine da Loja)
+A interface tem que ser amigável e funcionar bem tanto no celular quanto no
+computador. Capricha no visual!
+● Página Principal (Essencial):
+o Mostre as notícias em cards, com título, de onde veio, um resuminho e a
+data.
+o Coloque uns botões para o usuário filtrar por dia, semana ou mês.
+o Pode usar o framework que você mais curte (React, Vue, Angular), o
+importante é ser uma SPA (Single Page Application).
+● Telas de Login e Preferências (Bônus):
+o Telas de Login/Cadastro e a de escolha de preferências quando o
+usuário entra pela primeira vez.
+c. Onde Guardar os Dados (Banco de Dados)
+SQL ou NoSQL? PostgreSQL ou MongoDB? A escolha é sua! O mais
+importante para gente é entender por que você escolheu uma tecnologia em
+vez da outra. Você vai precisar modelar como os dados serão guardados para
+as notícias, categorias e, se fizer os bônus, os usuários e suas preferências.
+d. Comunicação Inteligente (Message Broker - Bônus)
+Se quiser ir além, use um sistema de mensageria para mostrar que você manja
+de criar sistemas que aguentem o tranco.
+● Como funcionaria:
+1. O Agente Curador acha uma notícia e, em vez de salvar direto no
+banco, manda uma mensagem para uma fila (usando RabbitMQ ou
+Kafka, por exemplo).
+2. Um serviço Consumidor fica de olho nessa fila, pega a notícia,
+processa (chama a IA etc.) e salva no banco. Isso deixa tudo mais
+organizado e desacoplado.
+e. O Toque de Mágica (IA e o Agente)
+● O Agente Curador de Conteúdo (Essencial):
+o Aqui a gente quer ver você construindo um agente high-code. O que
+isso significa? Em vez de usar uma plataforma pronta de automação
+(low-code/no-code), você vai escrever o código que define a inteligência
+do agente.
+o Ele deve ser um serviço separado (um worker) que segue regras
+complexas definidas por você para criar/selecionar notícias e salvá-las
+no banco. Por exemplo, pode ser um serviço em Python ou Node.js que:
+▪ Gera notícias fictícias sobre tecnologia com base em templates.
+▪ Analisa um arquivo CSV ou JSON local para extrair insights e
+transformá-los em notícias.
+▪ Processa textos para classificar sentimentos ou identificar entidades.
+o A criatividade para definir a lógica do agente é um ponto chave da
+avaliação!
+● Resumos Automáticos com IA (Bônus):
+o Se você implementar o sistema de mensageria, o "Consumidor" pode
+mandar o texto da notícia para uma IA (Gemini, GPT etc.) e pedir um
+resumo antes de salvar.
+f. Rodando em Contêineres (Docker)
+para gente ver que você também se vira com infra, a gente espera que a
+solução seja entregue de forma conteinerizada. Um docker-compose.yml que
+sobe todos os serviços (front, back, agente, banco de dados) seria o ideal!
+g. Boas Práticas de Engenharia de Software
+Além de tudo, vamos observar como você trabalha.
+● Testes Unitários (Bônus): A gente adoraria ver testes para as partes
+críticas do seu backend. Isso mostra que você se preocupa com a
+qualidade e a manutenção do código.
+● Clareza no Código: Um código limpo, bem-organizado e fácil de
+entender vale ouro. Comente o que for complexo, siga padrões de
+nomenclatura e estruture bem seus arquivos e pastas.
+● Uso do Git: Queremos ver um histórico de commits bem-feito. Commits
+pequenos e com mensagens claras mostram como você organiza seu
+trabalho.
+● Documentação: O README.md é a porta de entrada do seu projeto.
+Um README bem escrito, explicando as decisões e como rodar o
+projeto, faz toda a diferença.

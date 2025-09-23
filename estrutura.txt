@@ -1,0 +1,6 @@
+backend/
+  ├── Dockerfile
+  ├── requirements.txt
+  ├── manage.py
+  ├── app/   # onde ficará seu projeto Django
+docker-compose.yml

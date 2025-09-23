@@ -1,0 +1,68 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django static and media files (if generated)
+staticfiles/
+media/
+
+# SQLite database (if used)
+*.sqlite3
+
+# MacOS
+.DS_Store
+
+# VSCode / IDEs
+.vscode/
+.idea/
+
+# Environment variables / secrets
+.env
+.env.*
+
+# Docker
+*.log
+docker-compose.override.yml
+
+# Virtual environment
+venv/
+.env/
+env/
+ENV/
+.Python
+
+# Build / dist / packaging
+*.egg-info/
+.eggs/
+build/
+develop-eggs/
+dist/
+downloads/
+pip-wheel-metadata/
+wheels/
+share/python-wheels/
+
+# pytest
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+*.log
+htmlcov/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Pytest coverage
+.pytest_cache/
+
+# Other
+*.swp
+*.swo

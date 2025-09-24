@@ -2,7 +2,18 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
 
+# Configurar router para ViewSets
+router = DefaultRouter()
+router.register(r'news', views.NewsViewSet)
+router.register(r'categories', views.CategoryViewSet)
+router.register(r'profiles', views.UserProfileViewSet)
+
 urlpatterns = [
-    # Rota de cadastro de usuário
-    path('users/register/', views.register_user, name='user-register'),
+    # Rotas de autenticação
+    path('users/register/', views.register_user, name='register_user'),
+    path('users/login/', views.login_user, name='login_user'),
+    path('users/logout/', views.logout_user, name='logout_user'),
+    
+    # Incluir rotas do router
+    path('', include(router.urls)),
 ]

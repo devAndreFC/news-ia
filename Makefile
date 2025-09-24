@@ -32,13 +32,15 @@ define show_message
 endef
 
 # Comandos principais
-.PHONY: help setup migrate update update_backend clean logs status
+.PHONY: help setup migrate update update_backend clean logs status up down
 
 # Comando padrão - mostra ajuda
 help:
 	@echo "Sistema detectado: $(DETECTED_OS)"
 	@echo "Comandos disponíveis:"
 	@echo "  make setup          - Sobe todos os serviços (backend + banco)"
+	@echo "  make up             - Sobe os containers"
+	@echo "  make down           - Para os containers"
 	@echo "  make migrate        - Aplica migrações do backend"
 	@echo "  make update         - Atualiza todos os containers"
 	@echo "  make update_backend - Atualiza apenas o container do backend"
@@ -54,6 +56,16 @@ setup:
 	$(call show_message,Serviços iniciados com sucesso!)
 	$(call show_message,Backend disponível em: http://localhost:9000)
 	$(call show_message,Banco PostgreSQL em: localhost:5432)
+
+# Sobe os containers
+up:
+	$(call show_message,Subindo containers...)
+	$(DOCKER_COMPOSE) up -d
+
+# Para os containers
+down:
+	$(call show_message,Parando containers...)
+	$(DOCKER_COMPOSE) down
 
 # Aplica migrações do backend
 migrate:

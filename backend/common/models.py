@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 class Category(models.Model):
@@ -63,8 +65,25 @@ class UserProfile(models.Model):
     
     @property
     def is_admin(self):
-        return self.user_type == 'admin'
+        return self.user_type == 'admin' or self.user.is_superuser
     
     @property
     def is_reader(self):
         return self.user_type == 'reader'
+
+
+# Signal para criar automaticamente UserProfile quando um usuário é criado
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    """Cria automaticamente um UserProfile quando um novo usuário é criado"""
+    if created:
+        # Se é superuser, criar como admin, senão como reader
+        user_type = 'admin' if instance.is_superuser else 'reader'
+        UserProfile.objects.create(user=instance, user_type=user_type)
+
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    """Salva o UserProfile quando o usuário é salvo"""
+    if hasattr(instance, 'profile'):
+        instance.profile.save()

@@ -42,6 +42,36 @@ class UserProfileSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'user', 'created_at', 'updated_at']
     
+    def validate_user_type(self, value):
+        """
+        Impede que leitores se promovam a administradores.
+        Apenas administradores podem alterar user_type.
+        """
+        request = self.context.get('request')
+        if request and hasattr(request, 'user'):
+            try:
+                current_user_profile = request.user.profile
+                # Se o usuário atual não é admin, não pode alterar user_type
+                if not current_user_profile.is_admin:
+                    # Se está tentando alterar para admin, bloquear
+                    if value == 'admin':
+                        raise serializers.ValidationError(
+                            "Você não tem permissão para se promover a administrador."
+                        )
+                    # Se está tentando alterar o próprio tipo (mesmo que seja reader), bloquear
+                    if self.instance and self.instance.user == request.user:
+                        if value != self.instance.user_type:
+                            raise serializers.ValidationError(
+                                "Você não pode alterar seu próprio tipo de usuário."
+                            )
+            except UserProfile.DoesNotExist:
+                # Se não tem perfil, não pode alterar user_type
+                if value == 'admin':
+                    raise serializers.ValidationError(
+                        "Você não tem permissão para se promover a administrador."
+                    )
+        return value
+    
     def update(self, instance, validated_data):
         preferred_category_ids = validated_data.pop('preferred_category_ids', None)
         

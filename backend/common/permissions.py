@@ -5,39 +5,41 @@ from .models import UserProfile
 class IsAdminOrReadOnly(permissions.BasePermission):
     """
     Permissão customizada que permite:
-    - Leitura para todos os usuários autenticados
+    - Leitura para todos os usuários autenticados com token válido
     - Escrita apenas para usuários administradores
     """
     
     def has_permission(self, request, view):
+        # Verificar se o usuário está autenticado e não é anônimo
+        if not request.user or not request.user.is_authenticated or request.user.is_anonymous:
+            return False
+        
         # Permitir leitura para usuários autenticados
         if request.method in permissions.SAFE_METHODS:
-            return request.user.is_authenticated
+            return True
         
         # Para operações de escrita, verificar se é admin
-        if request.user.is_authenticated:
-            try:
-                profile = request.user.profile
-                return profile.is_admin
-            except UserProfile.DoesNotExist:
-                return False
-        
-        return False
+        try:
+            profile = request.user.profile
+            return profile.is_admin
+        except UserProfile.DoesNotExist:
+            return False
     
     def has_object_permission(self, request, view, obj):
+        # Verificar se o usuário está autenticado e não é anônimo
+        if not request.user or not request.user.is_authenticated or request.user.is_anonymous:
+            return False
+        
         # Permitir leitura para usuários autenticados
         if request.method in permissions.SAFE_METHODS:
-            return request.user.is_authenticated
+            return True
         
         # Para operações de escrita, verificar se é admin
-        if request.user.is_authenticated:
-            try:
-                profile = request.user.profile
-                return profile.is_admin
-            except UserProfile.DoesNotExist:
-                return False
-        
-        return False
+        try:
+            profile = request.user.profile
+            return profile.is_admin
+        except UserProfile.DoesNotExist:
+            return False
 
 
 class IsOwnerOrReadOnly(permissions.BasePermission):

@@ -28,7 +28,11 @@ from .permissions import IsAdminOrReadOnly, IsOwnerOrReadOnly
             'username': {'type': 'string', 'description': 'Nome de usuário único'},
             'password': {'type': 'string', 'description': 'Senha do usuário'}
         },
-        'required': ['username', 'password']
+        'required': ['username', 'password'],
+        'example': {
+            'username': 'novo_usuario',
+            'password': 'minhasenha123'
+        }
     },
     responses={
         201: {
@@ -107,7 +111,11 @@ def register_user(request):
             'username': {'type': 'string', 'description': 'Nome de usuário'},
             'password': {'type': 'string', 'description': 'Senha do usuário'}
         },
-        'required': ['username', 'password']
+        'required': ['username', 'password'],
+        'example': {
+            'username': 'usuario_exemplo',
+            'password': 'senha123'
+        }
     },
     responses={
         200: {

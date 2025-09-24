@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'django_filters',
     'corsheaders',
+    'drf_spectacular',
     'common',
 ]
 
@@ -142,6 +143,7 @@ REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 from datetime import timedelta
@@ -160,3 +162,51 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+# DRF Spectacular Configuration
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Newsletter API',
+    'DESCRIPTION': 'API para gerenciamento de newsletter com autenticação JWT',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SCHEMA_PATH_PREFIX': '/api/',
+    'SECURITY': [
+        {
+            'type': 'http',
+            'scheme': 'bearer',
+            'bearerFormat': 'JWT',
+        },
+        {
+            'type': 'apiKey',
+            'in': 'cookie',
+            'name': 'sessionid'
+        }
+    ],
+    'AUTHENTICATION_WHITELIST': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'APPEND_COMPONENTS': {
+        'securitySchemes': {
+            'jwtAuth': {
+                'type': 'http',
+                'scheme': 'bearer',
+                'bearerFormat': 'JWT',
+                'description': 'Token JWT para autenticação. Use o endpoint /auth/token/ para obter o token.'
+            },
+            'sessionAuth': {
+                'type': 'apiKey',
+                'in': 'cookie',
+                'name': 'sessionid',
+                'description': 'Autenticação por sessão Django. Use o endpoint /api/login/ para fazer login.'
+            }
+        }
+    },
+    'TAGS': [
+        {'name': 'Authentication', 'description': 'Endpoints de autenticação'},
+        {'name': 'Categories', 'description': 'Gerenciamento de categorias'},
+        {'name': 'News', 'description': 'Gerenciamento de notícias'},
+        {'name': 'User Profile', 'description': 'Gerenciamento de perfil do usuário'},
+    ]
+}

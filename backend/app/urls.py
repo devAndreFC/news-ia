@@ -22,10 +22,20 @@ from rest_framework_simplejwt.views import (
 )
 from rest_framework.routers import DefaultRouter
 from django.http import JsonResponse
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
 
 def api_root(request):
     """Lista todos os endpoints disponíveis na API"""
     endpoints = {
+        'documentation': {
+            'swagger': '/swagger/',
+            'redoc': '/redoc/',
+            'schema': '/api/schema/',
+        },
         'auth': {
             'token': '/auth/token/',
             'token_refresh': '/auth/token/refresh/',
@@ -48,8 +58,14 @@ def api_root(request):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # Swagger/OpenAPI URLs
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('swagger/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    # API URLs
     path('api/', api_root, name='api-root'),
     path('api/', include('common.urls')),
+    # Authentication URLs
     path('auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]

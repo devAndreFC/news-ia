@@ -2,6 +2,44 @@ from rest_framework import permissions
 from .models import UserProfile
 
 
+class IsAdminOrPublicReadOnly(permissions.BasePermission):
+    """
+    Permissão customizada que permite:
+    - Leitura para todos (incluindo usuários não autenticados)
+    - Escrita apenas para usuários administradores autenticados
+    """
+    
+    def has_permission(self, request, view):
+        # Permitir leitura para todos (autenticados ou não)
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        
+        # Para operações de escrita, verificar se está autenticado e é admin
+        if not request.user or not request.user.is_authenticated or request.user.is_anonymous:
+            return False
+        
+        try:
+            profile = request.user.profile
+            return profile.is_admin
+        except UserProfile.DoesNotExist:
+            return False
+    
+    def has_object_permission(self, request, view, obj):
+        # Permitir leitura para todos (autenticados ou não)
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        
+        # Para operações de escrita, verificar se está autenticado e é admin
+        if not request.user or not request.user.is_authenticated or request.user.is_anonymous:
+            return False
+        
+        try:
+            profile = request.user.profile
+            return profile.is_admin
+        except UserProfile.DoesNotExist:
+            return False
+
+
 class IsAdminOrReadOnly(permissions.BasePermission):
     """
     Permissão customizada que permite:

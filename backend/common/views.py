@@ -15,7 +15,7 @@ from .serializers import (
     NewsListSerializer, NewsDetailSerializer, NewsCreateUpdateSerializer,
     CategorySerializer, UserProfileSerializer
 )
-from .permissions import IsAdminOrReadOnly, IsOwnerOrReadOnly
+from .permissions import IsAdminOrReadOnly, IsOwnerOrReadOnly, IsAdminOrPublicReadOnly
 
 @extend_schema(
     methods=['POST'],
@@ -255,11 +255,11 @@ class CategoryViewSet(viewsets.ModelViewSet):
     ViewSet para gerenciar categorias de notícias.
     
     Permite operações CRUD completas para categorias.
-    Usuários autenticados podem visualizar, apenas administradores podem modificar.
+    Leitura pública (sem autenticação), apenas administradores podem modificar.
     """
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [IsAdminOrPublicReadOnly]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'description']
     ordering_fields = ['name', 'created_at']
@@ -335,11 +335,11 @@ class NewsViewSet(viewsets.ModelViewSet):
     ViewSet para gerenciar notícias.
     
     Permite operações CRUD completas para notícias.
-    Usuários autenticados podem visualizar, apenas administradores podem modificar.
+    Leitura pública (sem autenticação), apenas administradores podem modificar.
     Suporte a filtros por categoria, fonte, autor e busca textual.
     """
     queryset = News.objects.filter(is_active=True)
-    permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [IsAdminOrPublicReadOnly]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['category', 'source', 'author']
     search_fields = ['title', 'content', 'summary']

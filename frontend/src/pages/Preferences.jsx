@@ -19,7 +19,7 @@ const Preferences = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://localhost:9000/api/preferences/');
+      const response = await fetch('http://localhost:8000/api/preferences/');
       if (!response.ok) {
         throw new Error('Erro ao carregar categorias');
       }

@@ -62,7 +62,7 @@ const Register = () => {
       }
 
       // Buscar dados do usuário usando o token retornado
-      const userResponse = await fetch('http://localhost:9000/api/profiles/me/', {
+      const userResponse = await fetch('http://localhost:8000/api/profiles/me/', {
         headers: {
           'Authorization': `Bearer ${data.access_token}`,
           'Content-Type': 'application/json',

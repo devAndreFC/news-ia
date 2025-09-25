@@ -429,20 +429,23 @@ class NewsViewSet(viewsets.ModelViewSet):
         if self.request.user.is_authenticated:
             try:
                 profile = self.request.user.profile
-                if not profile.is_admin:
-                    queryset = queryset.filter(is_active=True)
                 
-                # Se o usuário tem preferências e não está filtrando por categoria específica,
-                # mostra APENAS notícias das categorias preferidas
-                preferred_categories = profile.preferred_categories.all()
-                category_filter = self.request.query_params.get('category')
-                
-                if preferred_categories.exists() and not category_filter:
-                    # Filtra apenas notícias das categorias preferidas
-                    queryset = queryset.filter(category__in=preferred_categories)
-                
-                # Ordenação por data de publicação
-                queryset = queryset.order_by('-published_at')
+                # Administradores veem todas as notícias sem filtro de preferências
+                if profile.is_admin:
+                    queryset = News.objects.filter(is_active=True).order_by('-published_at')
+                else:
+                    # Usuários comuns seguem o filtro de preferências
+                    # Se o usuário tem preferências e não está filtrando por categoria específica,
+                    # mostra APENAS notícias das categorias preferidas
+                    preferred_categories = profile.preferred_categories.all()
+                    category_filter = self.request.query_params.get('category')
+                    
+                    if preferred_categories.exists() and not category_filter:
+                        # Filtra apenas notícias das categorias preferidas
+                        queryset = queryset.filter(category__in=preferred_categories)
+                    
+                    # Ordenação por data de publicação
+                    queryset = queryset.order_by('-published_at')
                     
             except UserProfile.DoesNotExist:
                 queryset = queryset.filter(is_active=True).order_by('-published_at')
@@ -488,6 +491,57 @@ class NewsViewSet(viewsets.ModelViewSet):
                 {'error': 'Perfil do usuário não encontrado'}, 
                 status=status.HTTP_404_NOT_FOUND
             )
+
+    @extend_schema(
+        summary="Estatísticas administrativas",
+        description="Retorna estatísticas gerais do sistema (apenas para administradores)",
+        tags=['Admin'],
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'total_news': {'type': 'integer', 'description': 'Total de notícias no sistema'},
+                    'total_categories': {'type': 'integer', 'description': 'Total de categorias'},
+                    'total_users': {'type': 'integer', 'description': 'Total de usuários'},
+                    'active_news': {'type': 'integer', 'description': 'Total de notícias ativas'},
+                }
+            }
+        }
+    )
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def admin_stats(self, request):
+        """
+        Retorna estatísticas gerais do sistema para administradores.
+        
+        Inclui contagem total de notícias, categorias e usuários no sistema.
+        """
+        # Verificar se o usuário é admin
+        try:
+            profile = request.user.profile
+            if not profile.is_admin and not request.user.is_superuser:
+                return Response(
+                    {'error': 'Acesso negado. Apenas administradores podem acessar estas estatísticas.'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        except UserProfile.DoesNotExist:
+            if not request.user.is_superuser:
+                return Response(
+                    {'error': 'Acesso negado. Apenas administradores podem acessar estas estatísticas.'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        
+        # Calcular estatísticas
+        total_news = News.objects.count()  # Todas as notícias, incluindo inativas
+        active_news = News.objects.filter(is_active=True).count()
+        total_categories = Category.objects.count()
+        total_users = User.objects.count()
+        
+        return Response({
+            'total_news': total_news,
+            'active_news': active_news,
+            'total_categories': total_categories,
+            'total_users': total_users,
+        })
 
 
 @extend_schema_view(
@@ -700,3 +754,57 @@ class UserProfileViewSet(viewsets.ModelViewSet):
                     {'error': f'Erro ao atualizar preferências: {str(e)}'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
+
+
+@extend_schema(
+    methods=['GET'],
+    summary="Estatísticas administrativas",
+    description="Retorna estatísticas gerais do sistema (apenas para administradores)",
+    tags=['Admin'],
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'total_news': {'type': 'integer', 'description': 'Total de notícias no sistema'},
+                'total_categories': {'type': 'integer', 'description': 'Total de categorias'},
+                'total_users': {'type': 'integer', 'description': 'Total de usuários'},
+                'active_news': {'type': 'integer', 'description': 'Total de notícias ativas'},
+            }
+        }
+    }
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def admin_stats(request):
+    """
+    Retorna estatísticas gerais do sistema para administradores.
+    
+    Inclui contagem total de notícias, categorias e usuários no sistema.
+    """
+    # Verificar se o usuário é admin
+    try:
+        profile = request.user.profile
+        if not profile.is_admin and not request.user.is_superuser:
+            return Response(
+                {'error': 'Acesso negado. Apenas administradores podem acessar estas estatísticas.'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+    except UserProfile.DoesNotExist:
+        if not request.user.is_superuser:
+            return Response(
+                {'error': 'Acesso negado. Apenas administradores podem acessar estas estatísticas.'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+    
+    # Calcular estatísticas
+    total_news = News.objects.count()  # Todas as notícias, incluindo inativas
+    active_news = News.objects.filter(is_active=True).count()
+    total_categories = Category.objects.count()
+    total_users = User.objects.count()
+    
+    return Response({
+        'total_news': total_news,
+        'active_news': active_news,
+        'total_categories': total_categories,
+        'total_users': total_users,
+    })

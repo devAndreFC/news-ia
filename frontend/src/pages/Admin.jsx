@@ -22,9 +22,10 @@ const Admin = () => {
       setLoading(true);
       const token = localStorage.getItem('access_token');
       
-      // Buscar estatísticas básicas
+      // Buscar todas as notícias sem filtros de preferência
+      // Fazemos uma requisição com um limite alto para obter todas as notícias
       const [newsResponse, categoriesResponse] = await Promise.all([
-        fetch('http://localhost:8000/api/news/', {
+        fetch('http://localhost:8000/api/news/?page_size=1000', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -39,8 +40,28 @@ const Admin = () => {
       const newsData = await newsResponse.json();
       const categoriesData = await categoriesResponse.json();
 
+      // Para admin, queremos mostrar TODAS as notícias do sistema
+      // Vamos fazer uma segunda requisição para obter o total real
+      let totalNewsCount = newsData.count || newsData.length || 0;
+      
+      // Se o usuário é admin, tentamos obter todas as notícias
+      if (user && (user.profile?.is_admin || user.is_superuser)) {
+        try {
+          // Fazemos uma requisição adicional para tentar obter todas as notícias
+          const allNewsResponse = await fetch('http://localhost:8000/api/news/?page_size=10000', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          const allNewsData = await allNewsResponse.json();
+          totalNewsCount = allNewsData.count || allNewsData.length || totalNewsCount;
+        } catch (adminError) {
+          console.log('Usando contagem padrão de notícias');
+        }
+      }
+
       setStats({
-        totalNews: newsData.count || newsData.length || 0,
+        totalNews: totalNewsCount,
         totalCategories: categoriesData.count || categoriesData.length || 0,
         totalUsers: 0 // Placeholder
       });

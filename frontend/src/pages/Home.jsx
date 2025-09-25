@@ -99,7 +99,7 @@ const Home = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:9000/api/profiles/me/preferences/', {
+      const response = await fetch('http://localhost:8000/api/profiles/me/preferences/', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

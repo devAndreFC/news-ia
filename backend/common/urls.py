@@ -17,6 +17,9 @@ urlpatterns = [
     # Rotas de preferências
     path('preferences/', views.list_categories_for_preferences, name='list_preferences'),
     
+    # Rotas administrativas
+    path('admin/stats/', views.admin_stats, name='admin_stats'),
+    
     # Incluir rotas do router
     path('', include(router.urls)),
 ]

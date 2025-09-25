@@ -24,6 +24,12 @@ const Layout = () => {
               Notícias
             </Link>
             
+            {user && (
+              <Link to="/preferences" className="nav-link">
+                Minhas Preferências
+              </Link>
+            )}
+            
             {user && isAdmin() && (
               <Link to="/admin" className="nav-link">
                 Administração

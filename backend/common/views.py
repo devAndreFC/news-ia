@@ -17,6 +17,39 @@ from .serializers import (
 )
 from .permissions import IsAdminOrReadOnly, IsOwnerOrReadOnly, IsAdminOrPublicReadOnly
 
+
+@extend_schema(
+    methods=['GET'],
+    summary="Listar todas as categorias disponíveis",
+    description="Retorna uma lista de todas as categorias disponíveis para preferências",
+    tags=['Preferences'],
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'categories': {
+                    'type': 'array',
+                    'items': CategorySerializer
+                }
+            }
+        }
+    }
+)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def list_categories_for_preferences(request):
+    """
+    Lista todas as categorias disponíveis para seleção de preferências.
+    
+    Endpoint público que retorna todas as categorias que podem ser
+    selecionadas como preferências pelos usuários.
+    """
+    categories = Category.objects.all().order_by('name')
+    serializer = CategorySerializer(categories, many=True)
+    return Response({
+        'categories': serializer.data
+    }, status=status.HTTP_200_OK)
+
 @extend_schema(
     methods=['POST'],
     summary="Registrar usuário",
@@ -510,3 +543,117 @@ class UserProfileViewSet(viewsets.ModelViewSet):
                 serializer.save()
                 return Response(serializer.data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        methods=['GET'],
+        summary="Obter minhas preferências",
+        description="Retorna as categorias preferidas do usuário autenticado",
+        tags=['User Preferences'],
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'preferred_categories': {
+                        'type': 'array',
+                        'items': CategorySerializer
+                    }
+                }
+            }
+        }
+    )
+    @extend_schema(
+        methods=['PUT'],
+        summary="Atualizar minhas preferências",
+        description="Atualiza as categorias preferidas do usuário autenticado",
+        tags=['User Preferences'],
+        request={
+            'type': 'object',
+            'properties': {
+                'preferred_categories': {
+                    'type': 'array',
+                    'items': {'type': 'integer'},
+                    'description': 'Lista de IDs das categorias preferidas'
+                }
+            },
+            'required': ['preferred_categories'],
+            'example': {
+                'preferred_categories': [1, 2, 3]
+            }
+        },
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'preferred_categories': {
+                        'type': 'array',
+                        'items': CategorySerializer
+                    }
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'}
+                }
+            }
+        }
+    )
+    @action(detail=False, methods=['get', 'put'], permission_classes=[IsAuthenticated], url_path='me/preferences')
+    def preferences(self, request):
+        """
+        Gerencia as preferências de categorias do usuário autenticado.
+        
+        GET: Retorna as categorias preferidas do usuário
+        PUT: Atualiza as categorias preferidas do usuário
+        """
+        try:
+            profile = request.user.profile
+        except UserProfile.DoesNotExist:
+            # Criar perfil se não existir
+            profile = UserProfile.objects.create(user=request.user)
+        
+        if request.method == 'GET':
+            # Retorna as categorias preferidas do usuário
+            preferred_categories = profile.preferred_categories.all()
+            serializer = CategorySerializer(preferred_categories, many=True)
+            return Response({
+                'preferred_categories': serializer.data
+            })
+        
+        elif request.method == 'PUT':
+            # Atualiza as categorias preferidas do usuário
+            category_ids = request.data.get('preferred_categories', [])
+            
+            if not isinstance(category_ids, list):
+                return Response(
+                    {'error': 'preferred_categories deve ser uma lista de IDs'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Validar se todas as categorias existem
+            try:
+                categories = Category.objects.filter(id__in=category_ids)
+                if len(categories) != len(category_ids):
+                    invalid_ids = set(category_ids) - set(categories.values_list('id', flat=True))
+                    return Response(
+                        {'error': f'Categorias não encontradas: {list(invalid_ids)}'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+                # Atualizar as preferências
+                profile.preferred_categories.set(categories)
+                profile.save()
+                
+                # Retornar as categorias atualizadas
+                serializer = CategorySerializer(categories, many=True)
+                return Response({
+                    'message': 'Preferências atualizadas com sucesso',
+                    'preferred_categories': serializer.data
+                })
+                
+            except Exception as e:
+                return Response(
+                    {'error': f'Erro ao atualizar preferências: {str(e)}'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )

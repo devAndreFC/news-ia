@@ -19,8 +19,9 @@
 
 .filters {
   display: flex;
+  align-items: center;
   gap: 1rem;
-  align-items: flex-end;
+  margin-bottom: 2rem;
   flex-wrap: wrap;
 }
 
@@ -50,6 +51,38 @@
 .category-filter:focus {
   outline: none;
   border-color: #667eea;
+}
+
+.preferences-filter-btn {
+  background: #f8f9fa;
+  color: #495057;
+  border: 2px solid #e1e5e9;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.preferences-filter-btn:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+  transform: translateY(-1px);
+}
+
+.preferences-filter-btn.active {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  border-color: #f5576c;
+  box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
+}
+
+.preferences-filter-btn.active:hover {
+  background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(245, 87, 108, 0.4);
 }
 
 .clear-filter-btn {

@@ -1,26 +1,35 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import './Home.css';
 
 const Home = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [news, setNews] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [showOnlyPreferences, setShowOnlyPreferences] = useState(false);
+  const [userPreferences, setUserPreferences] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchNews();
     fetchCategories();
-  }, [selectedCategory]);
+    if (user) {
+      fetchUserPreferences();
+    }
+  }, [selectedCategory, showOnlyPreferences, user]);
 
   const fetchNews = async () => {
     try {
       setLoading(true);
-      const url = selectedCategory 
-        ? `http://localhost:9000/api/news/?category=${selectedCategory}`
-        : 'http://localhost:9000/api/news/';
+      let url = 'http://localhost:9000/api/news/';
+      
+      if (selectedCategory) {
+        url += `?category=${selectedCategory}`;
+      }
       
       const response = await fetch(url);
       if (!response.ok) {
@@ -28,8 +37,17 @@ const Home = () => {
       }
       
       const data = await response.json();
+      let newsData = data.results || data;
+      
+      // Filtrar por preferências se ativado
+      if (showOnlyPreferences && userPreferences.length > 0) {
+        newsData = newsData.filter(article => 
+          article.category && userPreferences.includes(article.category.id)
+        );
+      }
+      
       // Ordenar notícias por data de publicação (mais recentes primeiro)
-      const sortedNews = (data.results || data).sort((a, b) => {
+      const sortedNews = newsData.sort((a, b) => {
         return new Date(b.published_at) - new Date(a.published_at);
       });
       setNews(sortedNews);
@@ -52,6 +70,20 @@ const Home = () => {
       setCategories(data.results || data);
     } catch (err) {
       console.error('Erro ao carregar categorias:', err);
+    }
+  };
+
+  const fetchUserPreferences = async () => {
+    try {
+      const response = await fetch('http://localhost:9000/api/profiles/me/preferences/', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUserPreferences(data.preferred_categories || []);
+      }
+    } catch (err) {
+      console.error('Erro ao carregar preferências:', err);
     }
   };
 
@@ -118,23 +150,49 @@ const Home = () => {
               ))}
             </select>
           </div>
+
+          {user && userPreferences.length > 0 && (
+            <div className="filter-group">
+              <button
+                onClick={() => setShowOnlyPreferences(!showOnlyPreferences)}
+                className={`preferences-filter-btn ${showOnlyPreferences ? 'active' : ''}`}
+                title={showOnlyPreferences ? 'Mostrar todas as notícias' : 'Mostrar apenas minhas preferências'}
+              >
+                {showOnlyPreferences ? '⭐ Minhas Preferências' : '⭐ Filtrar por Preferências'}
+              </button>
+            </div>
+          )}
           
-          {selectedCategory && (
+          {(selectedCategory || showOnlyPreferences) && (
             <button 
-              onClick={() => setSelectedCategory('')}
+              onClick={() => {
+                setSelectedCategory('');
+                setShowOnlyPreferences(false);
+              }}
               className="clear-filter-btn"
-              title="Limpar filtro"
+              title="Limpar todos os filtros"
             >
-              ✕ Limpar filtro
+              ✕ Limpar filtros
             </button>
           )}
         </div>
       </div>
 
-      {selectedCategory && (
+      {(selectedCategory || showOnlyPreferences) && (
         <div className="filter-info">
           <p>
-            Exibindo notícias da categoria: <strong>{categories.find(cat => cat.id == selectedCategory)?.name}</strong>
+            {selectedCategory && (
+              <>
+                Exibindo notícias da categoria: <strong>{categories.find(cat => cat.id == selectedCategory)?.name}</strong>
+                {showOnlyPreferences && ' '}
+              </>
+            )}
+            {showOnlyPreferences && (
+              <>
+                {selectedCategory ? 'e ' : 'Exibindo '}
+                <strong>apenas suas categorias preferidas</strong>
+              </>
+            )}
             {news.length > 0 && ` (${news.length} ${news.length === 1 ? 'notícia encontrada' : 'notícias encontradas'})`}
           </p>
         </div>
@@ -144,11 +202,22 @@ const Home = () => {
         <div className="no-news">
           <h3>Nenhuma notícia encontrada</h3>
           <p>
-            {selectedCategory 
+            {showOnlyPreferences && selectedCategory 
+              ? 'Não há notícias disponíveis para esta categoria em suas preferências no momento.'
+              : showOnlyPreferences
+              ? 'Não há notícias disponíveis em suas categorias preferidas no momento.'
+              : selectedCategory 
               ? 'Não há notícias disponíveis para esta categoria no momento.' 
               : 'Não há notícias disponíveis no momento.'
             }
           </p>
+          {showOnlyPreferences && userPreferences.length === 0 && (
+            <p>
+              <a href="/preferences" style={{color: '#3498db', textDecoration: 'underline'}}>
+                Configure suas preferências
+              </a> para ver notícias personalizadas.
+            </p>
+          )}
         </div>
       ) : (
         <div className="news-grid">

@@ -14,6 +14,9 @@ urlpatterns = [
     path('users/login/', views.login_user, name='login_user'),
     path('users/logout/', views.logout_user, name='logout_user'),
     
+    # Rotas de preferências
+    path('preferences/', views.list_categories_for_preferences, name='list_preferences'),
+    
     # Incluir rotas do router
     path('', include(router.urls)),
 ]

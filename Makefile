@@ -23,6 +23,7 @@ endif
 
 # Variáveis
 DOCKER_COMPOSE = docker-compose
+FRONTEND_SERVICE = frontend
 BACKEND_SERVICE = backend
 DB_SERVICE = db
 
@@ -38,22 +39,26 @@ endef
 help:
 	@echo "Sistema detectado: $(DETECTED_OS)"
 	@echo "Comandos disponíveis:"
-	@echo "  make setup          - Sobe todos os serviços (backend + banco)"
+	@echo "  make setup          - Sobe todos os serviços (frontend + backend + banco)"
 	@echo "  make up             - Sobe os containers"
 	@echo "  make down           - Para os containers"
 	@echo "  make migrate        - Aplica migrações do backend"
 	@echo "  make update         - Atualiza todos os containers"
 	@echo "  make update_backend - Atualiza apenas o container do backend"
+	@echo "  make update_frontend- Atualiza apenas o container do frontend"
 	@echo "  make logs           - Mostra logs dos serviços"
+	@echo "  make logs_frontend  - Mostra logs apenas do frontend"
 	@echo "  make status         - Mostra status dos containers"
 	@echo "  make clean          - Para e remove todos os containers"
 	@echo "  make shell          - Acessa shell do container backend"
+	@echo "  make shell_frontend - Acessa shell do container frontend"
 
 # Sobe todos os serviços
 setup:
 	$(call show_message,Subindo todos os serviços...)
 	$(DOCKER_COMPOSE) up -d --build
 	$(call show_message,Serviços iniciados com sucesso!)
+	$(call show_message,Frontend disponível em: http://localhost:3000)
 	$(call show_message,Backend disponível em: http://localhost:9000)
 	$(call show_message,Banco PostgreSQL em: localhost:5432)
 
@@ -90,6 +95,14 @@ update_backend:
 	$(DOCKER_COMPOSE) up -d $(BACKEND_SERVICE)
 	$(call show_message,Backend atualizado com sucesso!)
 
+# Atualiza apenas o frontend
+update_frontend:
+	$(call show_message,Atualizando container do frontend...)
+	$(DOCKER_COMPOSE) stop $(FRONTEND_SERVICE)
+	$(DOCKER_COMPOSE) build --no-cache $(FRONTEND_SERVICE)
+	$(DOCKER_COMPOSE) up -d $(FRONTEND_SERVICE)
+	$(call show_message,Frontend atualizado com sucesso!)
+
 # Mostra logs dos serviços
 logs:
 	$(call show_message,Mostrando logs dos serviços...)
@@ -99,6 +112,11 @@ logs:
 logs_backend:
 	$(call show_message,Mostrando logs do backend...)
 	$(DOCKER_COMPOSE) logs -f $(BACKEND_SERVICE)
+
+# Mostra logs apenas do frontend
+logs_frontend:
+	$(call show_message,Mostrando logs do frontend...)
+	$(DOCKER_COMPOSE) logs -f $(FRONTEND_SERVICE)
 
 # Mostra status dos containers
 status:
@@ -114,7 +132,12 @@ clean:
 # Acessa shell do container backend
 shell:
 	$(call show_message,Acessando shell do backend...)
-	$(DOCKER_COMPOSE) exec $(BACKEND_SERVICE) $(SHELL_CMD)
+	$(DOCKER_COMPOSE) exec $(BACKEND_SERVICE) /bin/bash
+
+# Acessa shell do container frontend
+shell_frontend:
+	$(call show_message,Acessando shell do frontend...)
+	$(DOCKER_COMPOSE) exec $(FRONTEND_SERVICE) /bin/sh
 
 # Cria superusuário Django
 createsuperuser:

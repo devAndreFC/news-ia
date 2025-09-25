@@ -10,18 +10,21 @@ const API_CONFIG = {
     REGISTER: '/users/register/',
     
     // Notícias
+    NEWS_LIST: '/news/',
     NEWS: '/news/',
     NEWS_UPLOAD: '/news/upload-json/',
     NEWS_ANALYZE: '/news/analyze/',
     NEWS_CLASSIFY: '/news/classify-categories/',
     
     // Categorias
+    CATEGORIES_LIST: '/categories/',
     CATEGORIES: '/categories/',
     
     // Perfis e Preferências
     PROFILES: '/profiles/',
     PROFILE_ME: '/profiles/me/',
     PREFERENCES: '/preferences/',
+    USER_PREFERENCES: '/profiles/me/preferences/',
     PROFILE_PREFERENCES: '/profiles/me/preferences/',
     
     // Admin
@@ -41,6 +44,21 @@ export const getApiEndpoint = (endpointKey) => {
     throw new Error(`Endpoint '${endpointKey}' não encontrado na configuração`);
   }
   return buildApiUrl(endpoint);
+};
+
+// Função para construir URL com parâmetros de query
+export const buildApiUrlWithParams = (endpoint, params = {}) => {
+  const baseUrl = getApiEndpoint(endpoint);
+  const searchParams = new URLSearchParams();
+  
+  Object.keys(params).forEach(key => {
+    if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
+      searchParams.append(key, params[key]);
+    }
+  });
+  
+  const queryString = searchParams.toString();
+  return queryString ? `${baseUrl}?${queryString}` : baseUrl;
 };
 
 export default API_CONFIG;

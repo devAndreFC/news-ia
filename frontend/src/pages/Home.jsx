@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { buildApiUrlWithParams, getApiEndpoint } from '../config/api';
 import './Home.css';
 
 const Home = () => {
@@ -9,6 +10,7 @@ const Home = () => {
   const [news, setNews] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedPeriod, setSelectedPeriod] = useState('');
 
   const [userPreferences, setUserPreferences] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,21 +25,32 @@ const Home = () => {
     if (user) {
       fetchUserPreferences();
     }
-  }, [selectedCategory, user, currentPage]);
+  }, [selectedCategory, selectedPeriod, user, currentPage]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCategory]);
+  }, [selectedCategory, selectedPeriod]);
 
   const fetchNews = async () => {
     try {
       setLoading(true);
-      let url = `http://localhost:8000/api/news/?page=${currentPage}`;
+      
+      // Construir parâmetros da query
+      const params = {
+        page: currentPage
+      };
       
       if (selectedCategory) {
-        url += `&category=${selectedCategory}`;
+        params.category = selectedCategory;
       }
+      
+      if (selectedPeriod) {
+        params.period = selectedPeriod;
+      }
+      
+      // Usar a configuração centralizada da API
+      const url = buildApiUrlWithParams('NEWS_LIST', params);
       
       // Preparar headers para autenticação se usuário estiver logado
       const headers = {
@@ -79,7 +92,8 @@ const Home = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/categories/');
+      const url = getApiEndpoint('CATEGORIES_LIST');
+      const response = await fetch(url);
       if (!response.ok) {
         throw new Error('Erro ao carregar categorias');
       }
@@ -99,7 +113,8 @@ const Home = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:8000/api/profiles/me/preferences/', {
+      const url = getApiEndpoint('USER_PREFERENCES');
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -182,32 +197,58 @@ const Home = () => {
             </select>
           </div>
 
-
+          <div className="filter-group">
+            <label htmlFor="period-filter" className="filter-label">
+              Filtrar por período:
+            </label>
+            <select 
+              id="period-filter"
+              value={selectedPeriod} 
+              onChange={(e) => setSelectedPeriod(e.target.value)}
+              className="period-filter"
+            >
+              <option value="">🕒 Todos os períodos</option>
+              <option value="day">📅 Último dia</option>
+              <option value="week">📆 Última semana</option>
+              <option value="month">🗓️ Último mês</option>
+            </select>
+          </div>
           
-          {selectedCategory && (
+          {(selectedCategory || selectedPeriod) && (
             <button 
               onClick={() => {
                 setSelectedCategory('');
+                setSelectedPeriod('');
               }}
               className="clear-filter-btn"
-              title="Limpar filtro de categoria"
+              title="Limpar todos os filtros"
             >
-              ✕ Limpar filtro
+              ✕ Limpar filtros
             </button>
           )}
         </div>
       </div>
 
-      {selectedCategory && (
+      {(selectedCategory || selectedPeriod) && (
         <div className="filter-info">
           <p>
-            Exibindo notícias da categoria: <strong>{categories.find(cat => cat.id == selectedCategory)?.name}</strong>
+            Exibindo notícias
+            {selectedCategory && (
+              <> da categoria: <strong>{categories.find(cat => cat.id == selectedCategory)?.name}</strong></>
+            )}
+            {selectedPeriod && (
+              <> do período: <strong>
+                {selectedPeriod === 'day' && 'Último dia'}
+                {selectedPeriod === 'week' && 'Última semana'}
+                {selectedPeriod === 'month' && 'Último mês'}
+              </strong></>
+            )}
             {news.length > 0 && ` (${news.length} ${news.length === 1 ? 'notícia encontrada' : 'notícias encontradas'})`}
           </p>
         </div>
       )}
 
-      {user && userPreferences.length > 0 && !selectedCategory && (
+      {user && userPreferences.length > 0 && !selectedCategory && !selectedPeriod && (
         <div className="filter-info">
           <p>
             ⭐ Exibindo apenas notícias das suas categorias preferidas
@@ -220,14 +261,14 @@ const Home = () => {
         <div className="no-news">
           <h3>Nenhuma notícia encontrada</h3>
           <p>
-            {selectedCategory 
-              ? 'Não há notícias disponíveis para esta categoria no momento.' 
+            {(selectedCategory || selectedPeriod)
+              ? 'Não há notícias disponíveis para os filtros selecionados no momento.' 
               : user && userPreferences.length > 0
               ? 'Não há notícias disponíveis em suas categorias preferidas no momento.'
               : 'Não há notícias disponíveis no momento.'
             }
           </p>
-          {user && userPreferences.length === 0 && (
+          {user && userPreferences.length === 0 && !(selectedCategory || selectedPeriod) && (
             <p>
               <a href="/preferences" style={{color: '#3498db', textDecoration: 'underline'}}>
                 Configure suas preferências

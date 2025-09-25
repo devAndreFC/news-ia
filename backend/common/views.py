@@ -10,6 +10,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
+from django.utils import timezone
+from datetime import timedelta
 from .models import News, Category, UserProfile
 from .serializers import (
     NewsListSerializer, NewsDetailSerializer, NewsCreateUpdateSerializer,
@@ -353,6 +355,13 @@ class CategoryViewSet(viewsets.ModelViewSet):
                 type=OpenApiTypes.INT
             ),
             OpenApiParameter(
+                name='period',
+                description='Filtrar por período: day (último dia), week (última semana), month (último mês)',
+                required=False,
+                type=OpenApiTypes.STR,
+                enum=['day', 'week', 'month']
+            ),
+            OpenApiParameter(
                 name='search',
                 description='Buscar no título, conteúdo ou resumo',
                 required=False,
@@ -421,9 +430,29 @@ class NewsViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """
-        Filtra notícias baseado no tipo de usuário e preferências
+        Filtra notícias baseado no tipo de usuário, preferências e período
         """
         queryset = News.objects.filter(is_active=True)
+        
+        # Aplicar filtro de período se especificado
+        period = self.request.query_params.get('period')
+        if period:
+            now = timezone.now()
+            if period == 'day':
+                # Últimas 24 horas
+                start_date = now - timedelta(days=1)
+            elif period == 'week':
+                # Últimos 7 dias
+                start_date = now - timedelta(days=7)
+            elif period == 'month':
+                # Últimos 30 dias
+                start_date = now - timedelta(days=30)
+            else:
+                # Período inválido, ignorar filtro
+                start_date = None
+            
+            if start_date:
+                queryset = queryset.filter(published_at__gte=start_date)
         
         # Se o usuário está autenticado
         if self.request.user.is_authenticated:
@@ -432,7 +461,7 @@ class NewsViewSet(viewsets.ModelViewSet):
                 
                 # Administradores veem todas as notícias sem filtro de preferências
                 if profile.is_admin:
-                    queryset = News.objects.filter(is_active=True).order_by('-published_at')
+                    queryset = queryset.order_by('-published_at')
                 else:
                     # Usuários comuns seguem o filtro de preferências
                     # Se o usuário tem preferências e não está filtrando por categoria específica,
@@ -448,10 +477,10 @@ class NewsViewSet(viewsets.ModelViewSet):
                     queryset = queryset.order_by('-published_at')
                     
             except UserProfile.DoesNotExist:
-                queryset = queryset.filter(is_active=True).order_by('-published_at')
+                queryset = queryset.order_by('-published_at')
         else:
             # Usuário não autenticado vê todas as notícias
-            queryset = queryset.filter(is_active=True).order_by('-published_at')
+            queryset = queryset.order_by('-published_at')
         
         return queryset
     

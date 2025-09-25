@@ -16,7 +16,7 @@ const NewsDetail = () => {
   const fetchArticle = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:9000/api/news/${id}/`);
+      const response = await fetch(`http://localhost:8000/api/news/${id}/`);
       
       if (!response.ok) {
         throw new Error('Notícia não encontrada');

@@ -146,6 +146,17 @@
   box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
 }
 
+.action-btn.disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.action-btn.disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
 /* Responsividade */
 @media (max-width: 768px) {
   .admin-header h1 {

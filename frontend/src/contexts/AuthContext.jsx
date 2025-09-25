@@ -58,6 +58,10 @@ export const AuthProvider = ({ children }) => {
     return user?.profile?.is_admin || false;
   };
 
+  const isSuperuser = () => {
+    return user?.profile?.is_superuser || false;
+  };
+
   const value = {
     user,
     loading,
@@ -65,6 +69,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     isAuthenticated,
     isAdmin,
+    isSuperuser,
     checkUserStatus
   };
 

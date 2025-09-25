@@ -33,7 +33,7 @@ const Home = () => {
   const fetchNews = async () => {
     try {
       setLoading(true);
-      let url = `http://localhost:9000/api/news/?page=${currentPage}`;
+      let url = `http://localhost:8000/api/news/?page=${currentPage}`;
       
       if (selectedCategory) {
         url += `&category=${selectedCategory}`;
@@ -79,7 +79,7 @@ const Home = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://localhost:9000/api/categories/');
+      const response = await fetch('http://localhost:8000/api/categories/');
       if (!response.ok) {
         throw new Error('Erro ao carregar categorias');
       }

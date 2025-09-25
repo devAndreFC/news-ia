@@ -39,7 +39,7 @@ const Preferences = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:9000/api/profiles/me/preferences/', {
+      const response = await fetch('http://localhost:8000/api/profiles/me/preferences/', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -91,7 +91,7 @@ const Preferences = () => {
         throw new Error('Você precisa estar logado para salvar preferências');
       }
 
-      const response = await fetch('http://localhost:9000/api/profiles/me/preferences/', {
+      const response = await fetch('http://localhost:8000/api/profiles/me/preferences/', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

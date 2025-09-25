@@ -40,6 +40,36 @@ class IsAdminOrPublicReadOnly(permissions.BasePermission):
             return False
 
 
+class IsSuperuserOrPublicReadOnly(permissions.BasePermission):
+    """
+    Permissão customizada que permite:
+    - Leitura para todos (incluindo usuários não autenticados)
+    - Escrita apenas para superusers
+    """
+    
+    def has_permission(self, request, view):
+        # Permitir leitura para todos (autenticados ou não)
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        
+        # Para operações de escrita, verificar se está autenticado e é superuser
+        if not request.user or not request.user.is_authenticated or request.user.is_anonymous:
+            return False
+        
+        return request.user.is_superuser
+    
+    def has_object_permission(self, request, view, obj):
+        # Permitir leitura para todos (autenticados ou não)
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        
+        # Para operações de escrita, verificar se está autenticado e é superuser
+        if not request.user or not request.user.is_authenticated or request.user.is_anonymous:
+            return False
+        
+        return request.user.is_superuser
+
+
 class IsAdminOrReadOnly(permissions.BasePermission):
     """
     Permissão customizada que permite:

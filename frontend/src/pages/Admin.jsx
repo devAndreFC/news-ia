@@ -1,13 +1,17 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import CategoryManager from '../components/CategoryManager';
 import './Admin.css';
 
 const Admin = () => {
+  const { user, isSuperuser } = useAuth();
   const [stats, setStats] = useState({
     totalNews: 0,
     totalCategories: 0,
     totalUsers: 0
   });
   const [loading, setLoading] = useState(true);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
 
   useEffect(() => {
     fetchStats();
@@ -20,12 +24,12 @@ const Admin = () => {
       
       // Buscar estatísticas básicas
       const [newsResponse, categoriesResponse] = await Promise.all([
-        fetch('http://localhost:9000/api/news/', {
+        fetch('http://localhost:8000/api/news/', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         }),
-        fetch('http://localhost:9000/api/categories/', {
+        fetch('http://localhost:8000/api/categories/', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -106,9 +110,18 @@ const Admin = () => {
           <div className="action-card">
             <h3>📂 Gerenciar Categorias</h3>
             <p>Organizar categorias de notícias</p>
-            <button className="action-btn">
-              Acessar
-            </button>
+            {isSuperuser() ? (
+              <button 
+                className="action-btn"
+                onClick={() => setShowCategoryManager(true)}
+              >
+                Acessar
+              </button>
+            ) : (
+              <button className="action-btn disabled" disabled>
+                Apenas Superusers
+              </button>
+            )}
           </div>
 
           <div className="action-card">
@@ -128,6 +141,10 @@ const Admin = () => {
           </div>
         </div>
       </div>
+      
+      {showCategoryManager && (
+        <CategoryManager onClose={() => setShowCategoryManager(false)} />
+      )}
     </div>
   );
 };

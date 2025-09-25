@@ -15,7 +15,7 @@ from .serializers import (
     NewsListSerializer, NewsDetailSerializer, NewsCreateUpdateSerializer,
     CategorySerializer, UserProfileSerializer
 )
-from .permissions import IsAdminOrReadOnly, IsOwnerOrReadOnly, IsAdminOrPublicReadOnly
+from .permissions import IsAdminOrReadOnly, IsOwnerOrReadOnly, IsAdminOrPublicReadOnly, IsSuperuserOrPublicReadOnly
 
 
 @extend_schema(
@@ -157,7 +157,17 @@ def register_user(request):
                 'message': {'type': 'string'},
                 'user_id': {'type': 'integer'},
                 'username': {'type': 'string'},
-                'email': {'type': 'string'}
+                'email': {'type': 'string'},
+                'profile': {
+                    'type': 'object',
+                    'properties': {
+                        'user_type': {'type': 'string'},
+                        'is_admin': {'type': 'boolean'},
+                        'is_superuser': {'type': 'boolean'}
+                    }
+                },
+                'access': {'type': 'string'},
+                'refresh': {'type': 'string'}
             }
         },
         400: {
@@ -195,11 +205,30 @@ def login_user(request):
     
     if user is not None:
         login(request, user)
+        
+        # Buscar ou criar perfil do usuário
+        try:
+            profile = user.profile
+        except UserProfile.DoesNotExist:
+            # Se não existe perfil, criar um
+            user_type = 'admin' if user.is_superuser else 'reader'
+            profile = UserProfile.objects.create(user=user, user_type=user_type)
+        
+        # Gerar tokens JWT
+        refresh = RefreshToken.for_user(user)
+        
         return Response({
             'message': 'Login realizado com sucesso',
             'user_id': user.id,
             'username': user.username,
-            'email': user.email
+            'email': user.email,
+            'profile': {
+                'user_type': profile.user_type,
+                'is_admin': profile.is_admin,
+                'is_superuser': user.is_superuser
+            },
+            'access': str(refresh.access_token),
+            'refresh': str(refresh)
         }, status=status.HTTP_200_OK)
     else:
         return Response(
@@ -259,7 +288,7 @@ def logout_user(request):
     ),
     create=extend_schema(
         summary="Criar categoria",
-        description="Cria uma nova categoria (apenas administradores)",
+        description="Cria uma nova categoria (apenas superusers)",
         tags=['Categories']
     ),
     retrieve=extend_schema(
@@ -269,17 +298,17 @@ def logout_user(request):
     ),
     update=extend_schema(
         summary="Atualizar categoria",
-        description="Atualiza uma categoria existente (apenas administradores)",
+        description="Atualiza uma categoria existente (apenas superusers)",
         tags=['Categories']
     ),
     partial_update=extend_schema(
         summary="Atualizar categoria parcialmente",
-        description="Atualiza parcialmente uma categoria existente (apenas administradores)",
+        description="Atualiza parcialmente uma categoria existente (apenas superusers)",
         tags=['Categories']
     ),
     destroy=extend_schema(
         summary="Excluir categoria",
-        description="Exclui uma categoria (apenas administradores)",
+        description="Exclui uma categoria (apenas superusers)",
         tags=['Categories']
     ),
 )
@@ -288,11 +317,11 @@ class CategoryViewSet(viewsets.ModelViewSet):
     ViewSet para gerenciar categorias de notícias.
     
     Permite operações CRUD completas para categorias.
-    Leitura pública (sem autenticação), apenas administradores podem modificar.
+    Leitura pública (sem autenticação), apenas superusers podem modificar.
     """
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [IsAdminOrPublicReadOnly]
+    permission_classes = [IsSuperuserOrPublicReadOnly]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'description']
     ordering_fields = ['name', 'created_at']

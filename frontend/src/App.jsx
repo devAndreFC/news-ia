@@ -5,8 +5,9 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Admin from './pages/Admin';
-import NewsDetail from './pages/NewsDetail';
+import Profile from './pages/Profile';
 import Preferences from './pages/Preferences';
+import NewsDetail from './pages/NewsDetail';
 import './App.css';
 
 // Componente para rotas protegidas
@@ -34,6 +35,14 @@ function App() {
             <Route path="news/:id" element={<NewsDetail />} />
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
+            <Route 
+              path="profile" 
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } 
+            />
             <Route 
               path="preferences" 
               element={

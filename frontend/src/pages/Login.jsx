@@ -26,7 +26,7 @@ const Login = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:9000/auth/token/', {
+      const response = await fetch('http://localhost:8000/api/users/login/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -44,29 +44,17 @@ const Login = () => {
         throw new Error(data.detail || data.error || 'Erro ao fazer login');
       }
 
-      // Buscar dados do usuário usando o token
-      const userResponse = await fetch('http://localhost:9000/api/profiles/me/', {
-        headers: {
-          'Authorization': `Bearer ${data.access}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (!userResponse.ok) {
-        throw new Error('Erro ao buscar dados do usuário');
-      }
-
-      const profileData = await userResponse.json();
-
-      // Criar objeto de usuário compatível com o contexto
+      // Criar objeto de usuário compatível com o contexto usando os dados retornados diretamente
       const userData = {
-        ...profileData.user,
-        profile: {
-          is_admin: profileData.user_type === 'admin',
-          user_type: profileData.user_type,
-          preferred_categories: profileData.preferred_categories
-        }
+        id: data.user_id,
+        username: data.username,
+        email: data.email,
+        profile: data.profile
       };
+
+      // Armazenar tokens no localStorage
+      localStorage.setItem('access_token', data.access);
+      localStorage.setItem('refresh_token', data.refresh);
 
       // Usar o contexto para fazer login
       login(userData, {

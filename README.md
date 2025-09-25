@@ -40,14 +40,14 @@ Este projeto implementa uma plataforma de newsletter inteligente que combina:
 ## Configuração e Instalação
 
 ### Pré-requisitos
-- Docker e Docker Compose instalados
+- Docker e Docker Compose
 - Git
-- Chave da OpenAI API (opcional, para funcionalidades de IA)
+- Make
+- Chave da OpenAI API (para funcionalidades de IA)
 
 ### 1. Clone e Configure
 ```bash
-git clone <url-do-repositorio>
-cd teste
+git clone <url-do-repositorio> .
 
 # Configure variáveis de ambiente
 cp .env.example .env
@@ -233,8 +233,6 @@ POST /api/auth/logout/       # Logout
 GET    /api/news/           # Listar notícias (com filtros)
 POST   /api/news/           # Criar notícia
 GET    /api/news/{id}/      # Detalhes da notícia
-PUT    /api/news/{id}/      # Atualizar notícia
-DELETE /api/news/{id}/      # Deletar notícia
 
 # Parâmetros de filtro:
 # ?category=tech&period=week&page=1&page_size=10

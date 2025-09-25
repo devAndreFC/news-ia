@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import './Login.css';
 
 const Login = () => {
@@ -10,6 +11,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleChange = (e) => {
     setFormData({
@@ -24,7 +26,7 @@ const Login = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:9000/api/users/login/', {
+      const response = await fetch('http://localhost:9000/auth/token/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -35,23 +37,49 @@ const Login = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao fazer login');
+        // Padronizar mensagem de erro para credenciais inválidas
+        if (response.status === 401) {
+          throw new Error('Usuário ou senha inválidos');
+        }
+        throw new Error(data.detail || data.error || 'Erro ao fazer login');
       }
 
-      // Salvar tokens e dados do usuário
-      localStorage.setItem('access_token', data.access_token);
-      localStorage.setItem('refresh_token', data.refresh_token);
-      localStorage.setItem('user_data', JSON.stringify(data.user));
+      // Buscar dados do usuário usando o token
+      const userResponse = await fetch('http://localhost:9000/api/profiles/me/', {
+        headers: {
+          'Authorization': `Bearer ${data.access}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!userResponse.ok) {
+        throw new Error('Erro ao buscar dados do usuário');
+      }
+
+      const profileData = await userResponse.json();
+
+      // Criar objeto de usuário compatível com o contexto
+      const userData = {
+        ...profileData.user,
+        profile: {
+          is_admin: profileData.user_type === 'admin',
+          user_type: profileData.user_type,
+          preferred_categories: profileData.preferred_categories
+        }
+      };
+
+      // Usar o contexto para fazer login
+      login(userData, {
+        access_token: data.access,
+        refresh_token: data.refresh
+      });
 
       // Redirecionar baseado no tipo de usuário
-      if (data.user.profile?.is_admin) {
+      if (userData.profile.is_admin) {
         navigate('/admin');
       } else {
         navigate('/');
       }
-      
-      // Recarregar a página para atualizar o estado do usuário
-      window.location.reload();
       
     } catch (err) {
       setError(err.message);

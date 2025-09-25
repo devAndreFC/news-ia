@@ -1,26 +1,13 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import './Layout.css';
 
 const Layout = () => {
-  const [user, setUser] = useState(null);
+  const { user, logout: authLogout, isAdmin } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Verificar se há token no localStorage
-    const token = localStorage.getItem('access_token');
-    const userData = localStorage.getItem('user_data');
-    
-    if (token && userData) {
-      setUser(JSON.parse(userData));
-    }
-  }, []);
-
   const handleLogout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user_data');
-    setUser(null);
+    authLogout();
     navigate('/login');
   };
 
@@ -37,7 +24,7 @@ const Layout = () => {
               Notícias
             </Link>
             
-            {user && user.profile?.is_admin && (
+            {user && isAdmin() && (
               <Link to="/admin" className="nav-link">
                 Administração
               </Link>

@@ -64,8 +64,8 @@ class DatabaseManager:
         try:
             with self.connection.cursor() as cursor:
                 insert_query = """
-                INSERT INTO common_news (title, content, summary, source, published_at, category_id, author_id, created_at, updated_at)
-                VALUES (%(title)s, %(content)s, %(summary)s, %(source)s, %(published_at)s, %(category_id)s, %(author_id)s, NOW(), NOW())
+                INSERT INTO common_news (title, content, summary, source, published_at, category_id, author_id, is_active, created_at, updated_at)
+                VALUES (%(title)s, %(content)s, %(summary)s, %(source)s, %(published_at)s, %(category_id)s, %(author_id)s, %(is_active)s, NOW(), NOW())
                 """
                 cursor.execute(insert_query, news_data)
                 self.connection.commit()

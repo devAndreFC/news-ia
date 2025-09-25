@@ -57,6 +57,10 @@ help:
 	@echo "  make shell_curator  - Acessa shell do agente curador"
 	@echo "  make curator_test   - Executa o curador uma vez (teste)"
 	@echo "  make curator_restart- Reinicia o agente curador"
+	@echo "  make curator_consumer - Run curator as RabbitMQ consumer"
+	@echo "  make curator_publish  - Publish news generation request"
+	@echo "  make rabbitmq_logs    - Show RabbitMQ logs"
+	@echo "  make rabbitmq_status  - Show RabbitMQ status"
 
 # Sobe todos os serviços
 setup:
@@ -190,3 +194,19 @@ curator_restart:
 	$(call show_message,Reiniciando agente curador...)
 	$(DOCKER_COMPOSE) restart $(CURATOR_SERVICE)
 	$(call show_message,Agente curador reiniciado com sucesso!)
+
+# Run curator as RabbitMQ consumer
+curator_consumer:
+	$(DOCKER_COMPOSE) exec $(CURATOR_SERVICE) python curator.py --consumer
+
+# Publish news generation request
+curator_publish:
+	$(DOCKER_COMPOSE) exec $(CURATOR_SERVICE) python curator.py --publish
+
+# Show RabbitMQ logs
+rabbitmq_logs:
+	$(DOCKER_COMPOSE) logs -f rabbitmq
+
+# Show RabbitMQ status
+rabbitmq_status:
+	$(DOCKER_COMPOSE) exec rabbitmq rabbitmq-diagnostics status

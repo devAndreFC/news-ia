@@ -31,6 +31,15 @@ OPENAI_CONFIG = {
     'temperature': float(os.getenv('OPENAI_TEMPERATURE', '0.7')),
 }
 
+# RabbitMQ Configuration
+RABBITMQ_CONFIG = {
+    'host': os.getenv('RABBITMQ_HOST', 'localhost'),
+    'port': int(os.getenv('RABBITMQ_PORT', '5672')),
+    'username': os.getenv('RABBITMQ_USER', 'admin'),
+    'password': os.getenv('RABBITMQ_PASSWORD', 'admin'),
+    'enable_messaging': os.getenv('ENABLE_MESSAGING', 'true').lower() == 'true',
+}
+
 # News Categories
 NEWS_CATEGORIES = [
     'Tecnologia',

@@ -36,6 +36,24 @@ services:
     ports:
       - "${DB_PORT:-5432}:5432"
 
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: ${COMPOSE_PROJECT_NAME:-newsletter}-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-admin}
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   news-curator:
     build: ./news-curator
     container_name: ${COMPOSE_PROJECT_NAME:-newsletter}-curator
@@ -50,11 +68,17 @@ services:
       NEWS_PER_BATCH: ${CURATOR_NEWS_PER_BATCH:-3}
       LOG_LEVEL: ${CURATOR_LOG_LEVEL:-INFO}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-admin}
     depends_on:
       - db
       - backend
+      - rabbitmq
     volumes:
       - ./news-curator:/app
 
 volumes:
   postgres_data:
+  rabbitmq_data:

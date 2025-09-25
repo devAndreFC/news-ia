@@ -10,9 +10,10 @@ import sys
 from datetime import datetime
 from typing import List, Dict
 
-from config import CURATOR_CONFIG, LOGGING_CONFIG
+from config import CURATOR_CONFIG, LOGGING_CONFIG, RABBITMQ_CONFIG
 from database import DatabaseManager
 from openai_client import OpenAINewsGenerator
+from messaging import RabbitMQManager, NewsMessageHandler
 
 # Configure logging
 logging.basicConfig(
@@ -27,12 +28,23 @@ class NewsCurator:
     def __init__(self):
         self.db_manager = None
         self.news_generator = None
+        self.rabbitmq_manager = None
+        self.message_handler = None
         self.running = True
+        self.messaging_enabled = RABBITMQ_CONFIG['enable_messaging']
         
         try:
             self.db_manager = DatabaseManager()
             self.news_generator = OpenAINewsGenerator()
-            logger.info("News Curator Agent inicializado com sucesso (OpenAI GPT)")
+            
+            # Initialize messaging system if enabled
+            if self.messaging_enabled:
+                self.rabbitmq_manager = RabbitMQManager()
+                self.message_handler = NewsMessageHandler(self.news_generator, self.db_manager)
+                logger.info("News Curator Agent inicializado com sucesso (OpenAI GPT + RabbitMQ)")
+            else:
+                logger.info("News Curator Agent inicializado com sucesso (OpenAI GPT)")
+                
         except Exception as e:
             logger.error(f"Erro ao inicializar News Curator Agent: {e}")
             raise
@@ -113,14 +125,52 @@ class NewsCurator:
         finally:
             self.cleanup()
     
+    def run_as_consumer(self):
+        """Run as RabbitMQ message consumer"""
+        if not self.messaging_enabled or not self.rabbitmq_manager:
+            logger.error("Sistema de mensageria não está habilitado")
+            return
+        
+        logger.info("Iniciando News Curator como consumidor de mensagens")
+        
+        try:
+            # Start consuming news generation messages
+            self.rabbitmq_manager.consume_messages(
+                queue_name=self.rabbitmq_manager.NEWS_QUEUE,
+                callback=self.message_handler.handle_news_generation,
+                auto_ack=False
+            )
+        except KeyboardInterrupt:
+            logger.info("Consumidor interrompido pelo usuário")
+        except Exception as e:
+            logger.error(f"Erro no consumidor de mensagens: {e}")
+        finally:
+            self.cleanup()
+    
+    def publish_news_generation_request(self, categories: List[Dict] = None, news_per_category: int = None):
+        """Publish a news generation request to RabbitMQ"""
+        if not self.messaging_enabled or not self.rabbitmq_manager:
+            logger.warning("Sistema de mensageria não está habilitado")
+            return False
+        
+        if categories is None:
+            categories = self.db_manager.get_categories()
+        
+        if news_per_category is None:
+            news_per_category = CURATOR_CONFIG['news_per_batch']
+        
+        return self.rabbitmq_manager.publish_news_generation_request(categories, news_per_category)
+    
     def cleanup(self):
         """Cleanup resources"""
         try:
+            if self.rabbitmq_manager:
+                self.rabbitmq_manager.close()
             if self.db_manager:
-                self.db_manager.disconnect()
-            logger.info("News Curator Agent shutdown completed")
+                self.db_manager.close()
+            logger.info("Recursos limpos com sucesso")
         except Exception as e:
-            logger.error(f"Error during cleanup: {e}")
+            logger.error(f"Erro durante limpeza: {e}")
     
     def run_once(self):
         """Run news generation once (for testing)"""
@@ -136,20 +186,32 @@ class NewsCurator:
             sys.exit(1)
 
 def main():
-    """Main entry point"""
+    """Main function"""
     curator = NewsCurator()
     
-    # Check if running in test mode
-    if len(sys.argv) > 1 and sys.argv[1] == '--once':
-        logger.info("Running in test mode (single execution)")
-        curator.run_once()
-    else:
-        logger.info("Starting News Curator Agent in continuous mode")
-        if curator.initialize():
-            curator.run_scheduler()
+    # Check for different execution modes
+    if len(sys.argv) > 1:
+        mode = sys.argv[1]
+        
+        if mode == '--test':
+            logger.info("Executando em modo de teste")
+            curator.run_once()
+        elif mode == '--consumer':
+            logger.info("Executando em modo consumidor RabbitMQ")
+            curator.run_as_consumer()
+        elif mode == '--publish':
+            logger.info("Publicando solicitação de geração de notícias")
+            success = curator.publish_news_generation_request()
+            if success:
+                logger.info("Solicitação publicada com sucesso")
+            else:
+                logger.error("Falha ao publicar solicitação")
         else:
-            logger.error("Failed to initialize News Curator Agent")
-            sys.exit(1)
+            logger.warning(f"Modo desconhecido: {mode}. Usando modo padrão.")
+            curator.run_scheduler()
+    else:
+        logger.info("Iniciando News Curator Agent em modo contínuo")
+        curator.run_scheduler()
 
 if __name__ == "__main__":
     main()

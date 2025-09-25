@@ -137,6 +137,139 @@ def create_sample_news(categories, admin_user):
             'content': 'O Festival de Cinema de Cannes anunciou hoje os vencedores de suas principais categorias. Um filme brasileiro está concorrendo à prestigiosa Palma de Ouro, marcando um momento histórico para o cinema nacional no cenário internacional.',
             'source': 'Cinema & Arte',
             'category': 'Entretenimento'
+        },
+        {
+            'title': 'Startup Brasileira Desenvolve App de Sustentabilidade',
+            'summary': 'Aplicativo conecta consumidores a produtos ecológicos e sustentáveis.',
+            'content': 'Uma startup de São Paulo lançou um aplicativo inovador que conecta consumidores conscientes a produtos sustentáveis. A plataforma já conta com mais de 500 empresas parceiras e promete revolucionar o consumo responsável no Brasil.',
+            'source': 'EcoTech',
+            'category': 'Tecnologia'
+        },
+        {
+            'title': 'Reforma Tributária Aprovada no Congresso',
+            'summary': 'Nova legislação simplifica sistema tributário brasileiro.',
+            'content': 'O Congresso Nacional aprovou hoje a reforma tributária que promete simplificar o complexo sistema de impostos brasileiro. A medida deve entrar em vigor gradualmente nos próximos cinco anos, beneficiando empresas e consumidores.',
+            'source': 'Política Nacional',
+            'category': 'Política'
+        },
+        {
+            'title': 'Olimpíadas de Paris: Brasil Garante 15 Medalhas',
+            'summary': 'Delegação brasileira tem melhor desempenho dos últimos 20 anos.',
+            'content': 'A delegação brasileira nas Olimpíadas de Paris conquistou 15 medalhas, sendo 5 de ouro, 4 de prata e 6 de bronze. Este é o melhor desempenho do país nos últimos 20 anos, superando as expectativas iniciais.',
+            'source': 'Olimpíadas Brasil',
+            'category': 'Esportes'
+        },
+        {
+            'title': 'PIB Brasileiro Cresce 2,8% no Terceiro Trimestre',
+            'summary': 'Economia mostra sinais de recuperação após período de instabilidade.',
+            'content': 'O Produto Interno Bruto brasileiro registrou crescimento de 2,8% no terceiro trimestre, superando as expectativas dos analistas. O resultado é impulsionado pelo setor de serviços e pela retomada do consumo das famílias.',
+            'source': 'Economia Brasil',
+            'category': 'Economia'
+        },
+        {
+            'title': 'Vacina Nacional Contra Dengue Aprovada pela Anvisa',
+            'summary': 'Imunizante desenvolvido no Brasil mostra 95% de eficácia.',
+            'content': 'A Anvisa aprovou hoje a primeira vacina contra dengue desenvolvida integralmente no Brasil. Os testes clínicos mostraram eficácia de 95% na prevenção da doença, representando um marco para a saúde pública nacional.',
+            'source': 'Saúde Pública',
+            'category': 'Saúde'
+        },
+        {
+            'title': 'Série Brasileira Conquista Emmy Internacional',
+            'summary': 'Produção nacional é reconhecida mundialmente pela qualidade.',
+            'content': 'A série brasileira "Cidade Perdida" conquistou o Emmy Internacional na categoria Melhor Drama. Esta é a primeira vez que uma produção nacional recebe este prestigioso prêmio, colocando o Brasil no mapa da televisão mundial.',
+            'source': 'TV & Cinema',
+            'category': 'Entretenimento'
+        },
+        {
+            'title': 'Robô Brasileiro Vence Competição Mundial de Robótica',
+            'summary': 'Equipe de estudantes brasileiros supera 50 países na competição.',
+            'content': 'Uma equipe de estudantes brasileiros venceu a competição mundial de robótica, superando equipes de mais de 50 países. O robô desenvolvido pelos jovens demonstrou inovação e precisão técnica excepcionais.',
+            'source': 'Robótica News',
+            'category': 'Tecnologia'
+        },
+        {
+            'title': 'Ministro Anuncia Novo Programa de Habitação Popular',
+            'summary': 'Governo promete construir 1 milhão de casas em 4 anos.',
+            'content': 'O Ministro das Cidades anunciou hoje o lançamento de um novo programa habitacional que promete construir 1 milhão de casas populares nos próximos quatro anos. O investimento total será de R$ 200 bilhões.',
+            'source': 'Governo Federal',
+            'category': 'Política'
+        },
+        {
+            'title': 'Flamengo Contrata Técnico Europeu Renomado',
+            'summary': 'Clube carioca investe pesado para temporada 2025.',
+            'content': 'O Flamengo anunciou a contratação do técnico português José Mourinho para comandar a equipe na temporada 2025. O investimento de R$ 50 milhões por ano marca a maior contratação da história do futebol brasileiro.',
+            'source': 'Futebol Total',
+            'category': 'Esportes'
+        },
+        {
+            'title': 'Banco Central Reduz Taxa Selic para 8,5%',
+            'summary': 'Decisão visa estimular crescimento econômico do país.',
+            'content': 'O Comitê de Política Monetária do Banco Central decidiu reduzir a taxa Selic de 9,25% para 8,5%. A medida visa estimular o crescimento econômico e facilitar o acesso ao crédito para empresas e consumidores.',
+            'source': 'BC Comunica',
+            'category': 'Economia'
+        },
+        {
+            'title': 'Hospital Brasileiro Realiza Primeiro Transplante de Face',
+            'summary': 'Cirurgia pioneira marca avanço da medicina nacional.',
+            'content': 'O Hospital das Clínicas de São Paulo realizou com sucesso o primeiro transplante de face do Brasil. A cirurgia durou 18 horas e envolveu uma equipe de 30 profissionais, marcando um avanço histórico da medicina nacional.',
+            'source': 'Medicina Avançada',
+            'category': 'Saúde'
+        },
+        {
+            'title': 'Netflix Anuncia Produção de 20 Filmes Brasileiros',
+            'summary': 'Plataforma investe R$ 500 milhões no cinema nacional.',
+            'content': 'A Netflix anunciou um investimento de R$ 500 milhões para produzir 20 filmes brasileiros nos próximos dois anos. A iniciativa visa fortalecer o cinema nacional e levar produções brasileiras para o mundo.',
+            'source': 'Streaming News',
+            'category': 'Entretenimento'
+        },
+        {
+            'title': 'Brasil Desenvolve Primeiro Satélite 100% Nacional',
+            'summary': 'Tecnologia espacial brasileira atinge novo patamar.',
+            'content': 'O Instituto Nacional de Pesquisas Espaciais anunciou o desenvolvimento do primeiro satélite 100% brasileiro. O equipamento será lançado no próximo ano e marcará a independência tecnológica do país no setor espacial.',
+            'source': 'Espaço Brasil',
+            'category': 'Tecnologia'
+        },
+        {
+            'title': 'Supremo Tribunal Julga Marco Temporal das Terras Indígenas',
+            'summary': 'Decisão histórica define futuro dos territórios indígenas.',
+            'content': 'O Supremo Tribunal Federal iniciou hoje o julgamento do marco temporal das terras indígenas. A decisão será fundamental para definir os critérios de demarcação de territórios indígenas no Brasil.',
+            'source': 'Justiça Hoje',
+            'category': 'Política'
+        },
+        {
+            'title': 'Seleção Feminina de Vôlei Conquista Mundial',
+            'summary': 'Brasil vence final contra Estados Unidos por 3 sets a 1.',
+            'content': 'A seleção brasileira feminina de vôlei conquistou o título mundial após vencer os Estados Unidos por 3 sets a 1 na final. Esta é a terceira conquista mundial da equipe, consolidando o Brasil como potência no esporte.',
+            'source': 'Vôlei Brasil',
+            'category': 'Esportes'
+        },
+        {
+            'title': 'Inflação Brasileira Fica Abaixo da Meta pelo Terceiro Mês',
+            'summary': 'IPCA acumula 3,2% em 12 meses, dentro do centro da meta.',
+            'content': 'O Índice de Preços ao Consumidor Amplo ficou em 0,15% em novembro, acumulando 3,2% em 12 meses. Este é o terceiro mês consecutivo que a inflação fica abaixo do centro da meta de 3% estabelecida pelo governo.',
+            'source': 'IBGE Informa',
+            'category': 'Economia'
+        },
+        {
+            'title': 'Pesquisadores Brasileiros Descobrem Cura para Doença Rara',
+            'summary': 'Tratamento inovador oferece esperança para milhares de pacientes.',
+            'content': 'Pesquisadores da UFRJ descobriram um tratamento eficaz para a síndrome de Machado-Joseph, doença rara que afeta o sistema nervoso. O tratamento já está sendo testado em pacientes e mostra resultados promissores.',
+            'source': 'Pesquisa Médica',
+            'category': 'Saúde'
+        },
+        {
+            'title': 'Rock in Rio 2025 Anuncia Line-up com Artistas Nacionais',
+            'summary': 'Festival valoriza música brasileira com 60% do line-up nacional.',
+            'content': 'O Rock in Rio 2025 anunciou seu line-up com 60% de artistas brasileiros, valorizando a música nacional. O festival acontecerá em setembro e promete ser o maior evento musical do ano no país.',
+            'source': 'Rock in Rio',
+            'category': 'Entretenimento'
+        },
+        {
+            'title': 'Inteligência Artificial Brasileira Detecta Fraudes Bancárias',
+            'summary': 'Sistema nacional reduz fraudes em 85% nos bancos parceiros.',
+            'content': 'Uma empresa brasileira desenvolveu um sistema de inteligência artificial que detecta fraudes bancárias com 99% de precisão. A tecnologia já reduziu as fraudes em 85% nos bancos que adotaram o sistema.',
+            'source': 'FinTech Brasil',
+            'category': 'Tecnologia'
         }
     ]
     

@@ -13,6 +13,9 @@ const Home = () => {
   const [userPreferences, setUserPreferences] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     fetchNews();
@@ -20,15 +23,20 @@ const Home = () => {
     if (user) {
       fetchUserPreferences();
     }
-  }, [selectedCategory, showOnlyPreferences, user]);
+  }, [selectedCategory, showOnlyPreferences, user, currentPage]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, showOnlyPreferences]);
 
   const fetchNews = async () => {
     try {
       setLoading(true);
-      let url = 'http://localhost:9000/api/news/';
+      let url = `http://localhost:9000/api/news/?page=${currentPage}`;
       
       if (selectedCategory) {
-        url += `?category=${selectedCategory}`;
+        url += `&category=${selectedCategory}`;
       }
       
       const response = await fetch(url);
@@ -37,9 +45,13 @@ const Home = () => {
       }
       
       const data = await response.json();
-      let newsData = data.results || data;
+      let newsData = data.results || [];
       
-      // Filtrar por preferências se ativado
+      // Update pagination info
+      setTotalCount(data.count || 0);
+      setTotalPages(Math.ceil((data.count || 0) / 10)); // 10 items per page
+      
+      // Filtrar por preferências se ativado (apenas para exibição, não afeta paginação da API)
       if (showOnlyPreferences && userPreferences.length > 0) {
         newsData = newsData.filter(article => 
           article.category && userPreferences.includes(article.category.id)
@@ -263,6 +275,81 @@ const Home = () => {
               </div>
             </article>
           ))}
+        </div>
+      )}
+
+      {/* Pagination Component */}
+      {totalPages > 1 && (
+        <div className="pagination-footer">
+          <div className="pagination-info">
+            <span>
+              Página {currentPage} de {totalPages} 
+              {totalCount > 0 && ` (${totalCount} ${totalCount === 1 ? 'notícia' : 'notícias'} no total)`}
+            </span>
+          </div>
+          
+          <div className="pagination-controls">
+            <button 
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+              className="pagination-btn"
+              title="Primeira página"
+            >
+              ⏮️ Primeira
+            </button>
+            
+            <button 
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="pagination-btn"
+              title="Página anterior"
+            >
+              ⬅️ Anterior
+            </button>
+            
+            <div className="pagination-numbers">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`pagination-number ${currentPage === pageNum ? 'active' : ''}`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
+            
+            <button 
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="pagination-btn"
+              title="Próxima página"
+            >
+              Próxima ➡️
+            </button>
+            
+            <button 
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+              className="pagination-btn"
+              title="Última página"
+            >
+              Última ⏭️
+            </button>
+          </div>
         </div>
       )}
     </div>

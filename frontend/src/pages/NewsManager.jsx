@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import './NewsManager.css';
+import { getApiEndpoint } from '../config/api';
 
 const NewsManager = () => {
   const { user } = useAuth();
@@ -9,6 +10,8 @@ const NewsManager = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedNews, setProcessedNews] = useState([]);
   const [dragActive, setDragActive] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [jsonContent, setJsonContent] = useState(null);
 
   // Verificar se o usuário é admin
   if (!user || (!user.profile?.is_admin && !user.is_superuser)) {
@@ -22,6 +25,43 @@ const NewsManager = () => {
     );
   }
 
+  // Validação de arquivo JSON
+  const validateJsonFile = (file) => {
+    return new Promise((resolve, reject) => {
+      if (!file) {
+        reject('Nenhum arquivo selecionado');
+        return;
+      }
+
+      if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
+        reject('Por favor, selecione um arquivo JSON válido');
+        return;
+      }
+
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        reject('Arquivo muito grande. Limite máximo: 10MB');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const content = JSON.parse(e.target.result);
+          if (!Array.isArray(content)) {
+            reject('O arquivo JSON deve conter um array de notícias');
+            return;
+          }
+          resolve(content);
+        } catch (error) {
+          reject('Arquivo JSON inválido: ' + error.message);
+        }
+      };
+      reader.onerror = () => reject('Erro ao ler o arquivo');
+      reader.readAsText(file);
+    });
+  };
+
+  // Funções de drag and drop
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -38,43 +78,46 @@ const NewsManager = () => {
     setDragActive(false);
     
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      if (file.type === "application/json") {
-        setSelectedFile(file);
-        setUploadStatus('');
-      } else {
-        setUploadStatus('Por favor, selecione apenas arquivos JSON.');
-      }
+      handleFileSelect(e.dataTransfer.files[0]);
     }
   };
 
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.type === "application/json") {
-        setSelectedFile(file);
-        setUploadStatus('');
-      } else {
-        setUploadStatus('Por favor, selecione apenas arquivos JSON.');
-      }
+  const handleFileSelect = async (file) => {
+    try {
+      setUploadStatus('');
+      const content = await validateJsonFile(file);
+      setSelectedFile(file);
+      setJsonContent(content);
+      setUploadStatus(`Arquivo válido! ${content.length} notícias encontradas.`);
+    } catch (error) {
+      setUploadStatus(error);
+      setSelectedFile(null);
+      setJsonContent(null);
     }
+  };
+
+  const clearFile = () => {
+    setSelectedFile(null);
+    setJsonContent(null);
+    setUploadStatus('');
+    setProcessedNews([]);
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) {
-      setUploadStatus('Por favor, selecione um arquivo JSON.');
+    if (!selectedFile || !jsonContent) {
+      setUploadStatus('Nenhum arquivo válido selecionado');
       return;
     }
 
-    setIsProcessing(true);
-    setUploadStatus('Processando arquivo...');
+    setIsUploading(true);
+    setUploadStatus('Enviando arquivo para processamento...');
 
     try {
+      const token = localStorage.getItem('access_token');
       const formData = new FormData();
       formData.append('file', selectedFile);
 
-      const token = localStorage.getItem('access_token');
-      const response = await fetch('http://localhost:8000/api/news/process-json/', {
+      const response = await fetch(getApiEndpoint('NEWS_UPLOAD'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -84,24 +127,22 @@ const NewsManager = () => {
 
       if (response.ok) {
         const result = await response.json();
-        setProcessedNews(result.processed_articles || []);
-        setUploadStatus(`Sucesso! ${result.processed_articles?.length || 0} notícias processadas e enviadas para a fila.`);
-        setSelectedFile(null);
+        setUploadStatus(`✅ Sucesso! ${result.processed_count || jsonContent.length} notícias enviadas para processamento.`);
+        setProcessedNews(result.news || []);
+        
+        // Limpar após sucesso
+        setTimeout(() => {
+          clearFile();
+        }, 3000);
       } else {
         const error = await response.json();
-        setUploadStatus(`Erro: ${error.message || 'Falha no processamento'}`);
+        setUploadStatus(`❌ Erro: ${error.detail || 'Falha no upload'}`);
       }
     } catch (error) {
-      setUploadStatus(`Erro de conexão: ${error.message}`);
+      setUploadStatus(`❌ Erro de conexão: ${error.message}`);
     } finally {
-      setIsProcessing(false);
+      setIsUploading(false);
     }
-  };
-
-  const clearFile = () => {
-    setSelectedFile(null);
-    setUploadStatus('');
-    setProcessedNews([]);
   };
 
   return (
@@ -127,39 +168,48 @@ const NewsManager = () => {
             <input
               type="file"
               accept=".json"
-              onChange={handleFileSelect}
+              onChange={(e) => handleFileSelect(e.target.files[0])}
               className="file-input"
               id="file-upload"
             />
             <label htmlFor="file-upload" className="file-label">
-              Selecionar Arquivo
+              Selecionar Arquivo JSON
             </label>
           </div>
         </div>
 
         {selectedFile && (
-          <div className="file-info">
-            <h4>Arquivo Selecionado:</h4>
-            <div className="file-details">
-              <span className="file-name">{selectedFile.name}</span>
-              <span className="file-size">({(selectedFile.size / 1024).toFixed(2)} KB)</span>
-              <button onClick={clearFile} className="clear-btn">✕</button>
+            <div className="file-info">
+              <h4>📄 Arquivo Selecionado:</h4>
+              <div className="file-details">
+                <span className="file-name">{selectedFile.name}</span>
+                <span className="file-size">({(selectedFile.size / 1024).toFixed(2)} KB)</span>
+                {jsonContent && (
+                  <span className="news-count">• {jsonContent.length} notícias</span>
+                )}
+                <button onClick={clearFile} className="clear-btn">✕</button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         <div className="upload-actions">
           <button 
             onClick={handleUpload} 
-            disabled={!selectedFile || isProcessing}
+            disabled={!selectedFile || !jsonContent || isUploading}
             className="upload-btn"
           >
-            {isProcessing ? 'Processando...' : 'Processar Arquivo'}
+            {isUploading ? '⏳ Processando...' : '🚀 Processar Notícias'}
           </button>
         </div>
 
         {uploadStatus && (
-          <div className={`upload-status ${uploadStatus.includes('Erro') ? 'error' : 'success'}`}>
+          <div className={`upload-status ${
+            uploadStatus.includes('✅') || uploadStatus.includes('Sucesso') || uploadStatus.includes('válido') 
+              ? 'success' 
+              : uploadStatus.includes('❌') || uploadStatus.includes('Erro')
+              ? 'error'
+              : 'info'
+          }`}>
             {uploadStatus}
           </div>
         )}

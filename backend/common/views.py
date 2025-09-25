@@ -808,3 +808,518 @@ def admin_stats(request):
         'total_categories': total_categories,
         'total_users': total_users,
     })
+
+
+@extend_schema(
+    methods=['POST'],
+    summary="Upload de arquivo JSON com notícias",
+    description="Endpoint para upload de arquivo JSON contendo múltiplas notícias para processamento automático",
+    tags=['News'],
+    request={
+        'multipart/form-data': {
+            'type': 'object',
+            'properties': {
+                'file': {
+                    'type': 'string',
+                    'format': 'binary',
+                    'description': 'Arquivo JSON com lista de notícias'
+                }
+            }
+        }
+    },
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'message': {'type': 'string'},
+                'processed_count': {'type': 'integer'},
+                'total_count': {'type': 'integer'},
+                'results': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'object',
+                        'properties': {
+                            'title': {'type': 'string'},
+                            'status': {'type': 'string'},
+                            'message': {'type': 'string'}
+                        }
+                    }
+                }
+            }
+        },
+        400: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'details': {'type': 'object'}
+            }
+        },
+        403: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'}
+            }
+        }
+    }
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def upload_news_json(request):
+    """
+    Upload de arquivo JSON com múltiplas notícias para processamento automático.
+    
+    Apenas administradores podem usar este endpoint.
+    O arquivo deve conter uma lista de objetos JSON com os campos:
+    - title: título da notícia
+    - content: conteúdo completo
+    - source: fonte da notícia
+    - category: nome da categoria
+    - published_at: data de publicação (ISO format)
+    - author: nome do autor (opcional)
+    - summary: resumo da notícia (opcional)
+    """
+    # Verificar se o usuário é admin
+    if not hasattr(request.user, 'profile') or not request.user.profile.is_admin:
+        return Response(
+            {'error': 'Apenas administradores podem fazer upload de notícias.'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # Validar o arquivo enviado
+    from .serializers import NewsUploadSerializer
+    serializer = NewsUploadSerializer(data=request.data)
+    
+    if not serializer.is_valid():
+        return Response(
+            {'error': 'Arquivo inválido', 'details': serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Processar o arquivo JSON
+    try:
+        import json
+        from datetime import datetime
+        from django.utils import timezone
+        
+        file = serializer.validated_data['file']
+        content = file.read().decode('utf-8')
+        news_data = json.loads(content)
+        
+        processed_count = 0
+        total_count = len(news_data)
+        results = []
+        
+        for news_item in news_data:
+            try:
+                # Buscar ou criar categoria
+                category_name = news_item['category'].strip()
+                category, created = Category.objects.get_or_create(
+                    name=category_name,
+                    defaults={'description': f'Categoria criada automaticamente: {category_name}'}
+                )
+                
+                # Processar data de publicação
+                published_at_str = news_item['published_at']
+                try:
+                    # Tentar diferentes formatos de data
+                    if 'T' in published_at_str:
+                        published_at = datetime.fromisoformat(published_at_str.replace('Z', '+00:00'))
+                    else:
+                        published_at = datetime.strptime(published_at_str, '%Y-%m-%d')
+                    
+                    # Converter para timezone aware
+                    if timezone.is_naive(published_at):
+                        published_at = timezone.make_aware(published_at)
+                        
+                except (ValueError, TypeError) as e:
+                    published_at = timezone.now()
+                
+                # Criar a notícia
+                news = News.objects.create(
+                    title=news_item['title'].strip(),
+                    content=news_item['content'].strip(),
+                    summary=news_item.get('summary', '')[:500],  # Limitar resumo
+                    source=news_item['source'].strip(),
+                    category=category,
+                    author=request.user,
+                    published_at=published_at,
+                    is_active=True
+                )
+                
+                # Realizar análise automática da notícia
+                try:
+                    from .services import analyze_single_news
+                    analysis_result = analyze_single_news(news)
+                    
+                    if analysis_result['success']:
+                        analysis_info = f" (Análise: {analysis_result['sentiment']['label']})"
+                    else:
+                        analysis_info = " (Análise: erro)"
+                except Exception as analysis_error:
+                    analysis_info = f" (Análise: falhou - {str(analysis_error)})"
+                
+                processed_count += 1
+                results.append({
+                    'title': news.title,
+                    'status': 'success',
+                    'message': f'Notícia criada com sucesso{analysis_info}'
+                })
+                
+            except Exception as e:
+                results.append({
+                    'title': news_item.get('title', 'Título não disponível'),
+                    'status': 'error',
+                    'message': f'Erro ao processar: {str(e)}'
+                })
+        
+        return Response({
+            'message': f'Processamento concluído. {processed_count} de {total_count} notícias foram criadas.',
+            'processed_count': processed_count,
+            'total_count': total_count,
+            'results': results
+        })
+        
+    except Exception as e:
+        return Response(
+            {'error': f'Erro interno no processamento: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@extend_schema(
+    methods=['POST'],
+    summary="Análise de sentimentos e entidades",
+    description="Endpoint para análise manual de sentimentos e entidades de notícias existentes",
+    tags=['News'],
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'news_ids': {
+                    'type': 'array',
+                    'items': {'type': 'integer'},
+                    'description': 'Lista de IDs das notícias para análise (opcional - se vazio, analisa todas)'
+                },
+                'force_reanalysis': {
+                    'type': 'boolean',
+                    'description': 'Forçar re-análise mesmo se já foi analisada (padrão: false)'
+                }
+            }
+        }
+    },
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'message': {'type': 'string'},
+                'total_processed': {'type': 'integer'},
+                'success_count': {'type': 'integer'},
+                'error_count': {'type': 'integer'},
+                'errors': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'object',
+                        'properties': {
+                            'news_id': {'type': 'integer'},
+                            'title': {'type': 'string'},
+                            'error': {'type': 'string'}
+                        }
+                    }
+                }
+            }
+        },
+        403: {'description': 'Acesso negado - apenas administradores'},
+        400: {'description': 'Dados inválidos'}
+    }
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def analyze_news(request):
+    """
+    Análise manual de sentimentos e entidades para notícias existentes.
+    
+    Apenas administradores podem usar este endpoint.
+    """
+    # Verificar se o usuário é admin
+    if not hasattr(request.user, 'profile') or not request.user.profile.is_admin:
+        return Response(
+            {'error': 'Apenas administradores podem executar análises.'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    try:
+        from .services import NewsAnalysisService
+        
+        # Obter parâmetros da requisição
+        news_ids = request.data.get('news_ids', [])
+        force_reanalysis = request.data.get('force_reanalysis', False)
+        
+        # Determinar quais notícias analisar
+        if news_ids:
+            # Analisar notícias específicas
+            news_queryset = News.objects.filter(id__in=news_ids)
+            if not news_queryset.exists():
+                return Response(
+                    {'error': 'Nenhuma notícia encontrada com os IDs fornecidos.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        else:
+            # Analisar todas as notícias
+            if force_reanalysis:
+                news_queryset = News.objects.all()
+            else:
+                # Apenas notícias que ainda não foram analisadas
+                news_queryset = News.objects.filter(analysis_timestamp__isnull=True)
+        
+        if not news_queryset.exists():
+            return Response({
+                'message': 'Nenhuma notícia encontrada para análise.',
+                'total_processed': 0,
+                'success_count': 0,
+                'error_count': 0,
+                'errors': []
+            })
+        
+        # Executar análise
+        analysis_service = NewsAnalysisService()
+        results = analysis_service.batch_analyze_news(news_queryset)
+        
+        return Response({
+            'message': f'Análise concluída. {results["success_count"]} de {results["total_processed"]} notícias foram analisadas com sucesso.',
+            'total_processed': results['total_processed'],
+            'success_count': results['success_count'],
+            'error_count': results['error_count'],
+            'errors': results['errors']
+        })
+        
+    except Exception as e:
+        return Response(
+            {'error': f'Erro interno na análise: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@extend_schema(
+    methods=['POST'],
+    summary="Classificação automática de categorias",
+    description="Endpoint para classificação automática de categorias de notícias",
+    tags=['News'],
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'news_ids': {
+                    'type': 'array',
+                    'items': {'type': 'integer'},
+                    'description': 'Lista de IDs das notícias para classificar (opcional - se vazio, classifica todas)'
+                },
+                'auto_assign': {
+                    'type': 'boolean',
+                    'description': 'Atribuir automaticamente categorias com alta confiança (padrão: false)'
+                },
+                'confidence_threshold': {
+                    'type': 'number',
+                    'description': 'Limite de confiança para auto-atribuição (padrão: 0.3)'
+                }
+            }
+        }
+    },
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'message': {'type': 'string'},
+                'total_processed': {'type': 'integer'},
+                'high_confidence_count': {'type': 'integer'},
+                'auto_assigned_count': {'type': 'integer'},
+                'suggestions': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'object',
+                        'properties': {
+                            'news_id': {'type': 'integer'},
+                            'news_title': {'type': 'string'},
+                            'classification': {
+                                'type': 'object',
+                                'properties': {
+                                    'category': {'type': 'string'},
+                                    'confidence': {'type': 'number'}
+                                }
+                            },
+                            'auto_assigned': {'type': 'boolean'}
+                        }
+                    }
+                }
+            }
+        },
+        403: {'description': 'Acesso negado - apenas administradores'},
+        400: {'description': 'Dados inválidos'}
+    }
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def classify_news_categories(request):
+    """
+    Classificação automática de categorias para notícias.
+    
+    Apenas administradores podem usar este endpoint.
+    """
+    # Verificar se o usuário é admin
+    if not hasattr(request.user, 'profile') or not request.user.profile.is_admin:
+        return Response(
+            {'error': 'Apenas administradores podem executar classificações.'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    try:
+        from .services import NewsAnalysisService
+        
+        # Obter parâmetros da requisição
+        news_ids = request.data.get('news_ids', [])
+        auto_assign = request.data.get('auto_assign', False)
+        confidence_threshold = request.data.get('confidence_threshold', 0.3)
+        
+        # Determinar quais notícias classificar
+        if news_ids:
+            news_queryset = News.objects.filter(id__in=news_ids)
+            if not news_queryset.exists():
+                return Response(
+                    {'error': 'Nenhuma notícia encontrada com os IDs fornecidos.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        else:
+            news_queryset = News.objects.all()
+        
+        if not news_queryset.exists():
+            return Response({
+                'message': 'Nenhuma notícia encontrada para classificação.',
+                'total_processed': 0,
+                'suggestions': []
+            })
+        
+        # Executar classificação
+        analysis_service = NewsAnalysisService()
+        suggestions = analysis_service.suggest_categories_for_news_batch(news_queryset)
+        
+        # Estatísticas
+        total_processed = len(suggestions)
+        auto_assigned = 0
+        high_confidence = 0
+        
+        # Processar sugestões
+        processed_suggestions = []
+        for suggestion in suggestions:
+            classification = suggestion['classification']
+            
+            # Contar estatísticas
+            if classification['confidence'] >= confidence_threshold:
+                high_confidence += 1
+            
+            # Auto-atribuir se solicitado e confiança suficiente
+            if (auto_assign and 
+                classification['confidence'] >= confidence_threshold and 
+                suggestion['category_object']):
+                
+                try:
+                    news = News.objects.get(id=suggestion['news_id'])
+                    news.category = suggestion['category_object']
+                    news.save()
+                    auto_assigned += 1
+                    suggestion['auto_assigned'] = True
+                except Exception as e:
+                    suggestion['auto_assigned'] = False
+                    suggestion['assignment_error'] = str(e)
+            else:
+                suggestion['auto_assigned'] = False
+            
+            processed_suggestions.append(suggestion)
+        
+        return Response({
+            'message': f'Classificação concluída. {total_processed} notícias processadas.',
+            'total_processed': total_processed,
+            'high_confidence_count': high_confidence,
+            'auto_assigned_count': auto_assigned,
+            'confidence_threshold': confidence_threshold,
+            'suggestions': processed_suggestions
+        })
+        
+    except Exception as e:
+        return Response(
+            {'error': f'Erro interno na classificação: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@extend_schema(
+    methods=['GET'],
+    summary="Sugestão de categoria para notícia",
+    description="Obtém sugestão de categoria para uma notícia específica",
+    tags=['News'],
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'news_id': {'type': 'integer'},
+                'news_title': {'type': 'string'},
+                'current_category': {'type': 'string'},
+                'classification': {
+                    'type': 'object',
+                    'properties': {
+                        'category': {'type': 'string'},
+                        'confidence': {'type': 'number'}
+                    }
+                },
+                'suggested_category_exists': {'type': 'boolean'}
+            }
+        },
+        404: {'description': 'Notícia não encontrada'},
+        500: {'description': 'Erro interno'}
+    }
+)
+@api_view(['GET'])
+def test_simple_view(request, news_id=None):
+    """
+    View de teste simples.
+    """
+    if news_id:
+        return Response({'message': f'Test successful for news_id: {news_id}'})
+    else:
+        return Response({'message': 'Simple test successful'})
+
+@api_view(['GET'])
+def get_category_suggestions(request, news_id):
+    """
+    Obtém sugestão de categoria para uma notícia específica.
+    """
+    try:
+        news = News.objects.get(id=news_id)
+        
+        # Executar classificação
+        from .services import NewsAnalysisService
+        analysis_service = NewsAnalysisService()
+        result = analysis_service.classify_news_category(news)
+        
+        if result['success']:
+            return Response({
+                'news_id': news_id,
+                'news_title': news.title,
+                'current_category': news.category.name if news.category else None,
+                'classification': result['classification'],
+                'suggested_category_exists': result['category_object'] is not None
+            })
+        else:
+            return Response(
+                {'error': result['error']},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+            
+    except News.DoesNotExist:
+        return Response(
+            {'error': 'Notícia não encontrada'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {'error': f'Erro interno: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

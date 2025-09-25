@@ -113,9 +113,15 @@ class NewsDetailSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'content', 'summary', 'source', 
             'category', 'category_id', 'author', 'published_at', 
-            'created_at', 'updated_at', 'is_active'
+            'created_at', 'updated_at', 'is_active',
+            'sentiment_score', 'sentiment_label', 'sentiment_confidence',
+            'entities_data', 'analysis_contexts', 'analysis_timestamp'
         ]
-        read_only_fields = ['id', 'author', 'created_at', 'updated_at']
+        read_only_fields = [
+            'id', 'author', 'created_at', 'updated_at',
+            'sentiment_score', 'sentiment_label', 'sentiment_confidence',
+            'entities_data', 'analysis_contexts', 'analysis_timestamp'
+        ]
     
     def create(self, validated_data):
         # O autor será definido na view baseado no usuário autenticado
@@ -161,3 +167,53 @@ class NewsCreateUpdateSerializer(serializers.ModelSerializer):
             category = Category.objects.get(id=category_id)
             validated_data['category'] = category
         return super().update(instance, validated_data)
+
+
+class NewsUploadSerializer(serializers.Serializer):
+    """Serializer para upload de arquivo JSON com notícias"""
+    file = serializers.FileField()
+    
+    def validate_file(self, value):
+        """Valida o arquivo JSON enviado"""
+        # Verificar extensão do arquivo
+        if not value.name.endswith('.json'):
+            raise serializers.ValidationError("Apenas arquivos JSON são permitidos.")
+        
+        # Verificar tamanho do arquivo (máximo 10MB)
+        if value.size > 10 * 1024 * 1024:
+            raise serializers.ValidationError("Arquivo muito grande. Tamanho máximo: 10MB.")
+        
+        # Tentar fazer parse do JSON
+        try:
+            import json
+            content = value.read()
+            value.seek(0)  # Reset file pointer
+            data = json.loads(content.decode('utf-8'))
+            
+            # Verificar se é uma lista
+            if not isinstance(data, list):
+                raise serializers.ValidationError("O arquivo JSON deve conter uma lista de notícias.")
+            
+            # Verificar se não está vazio
+            if len(data) == 0:
+                raise serializers.ValidationError("O arquivo JSON não pode estar vazio.")
+            
+            # Validar estrutura básica de cada notícia
+            required_fields = ['title', 'content', 'source', 'category', 'published_at']
+            for i, news_item in enumerate(data):
+                if not isinstance(news_item, dict):
+                    raise serializers.ValidationError(f"Item {i+1}: deve ser um objeto JSON.")
+                
+                for field in required_fields:
+                    if field not in news_item:
+                        raise serializers.ValidationError(f"Item {i+1}: campo '{field}' é obrigatório.")
+                    
+                    if not news_item[field] or (isinstance(news_item[field], str) and not news_item[field].strip()):
+                        raise serializers.ValidationError(f"Item {i+1}: campo '{field}' não pode estar vazio.")
+            
+        except json.JSONDecodeError as e:
+            raise serializers.ValidationError(f"Arquivo JSON inválido: {str(e)}")
+        except UnicodeDecodeError:
+            raise serializers.ValidationError("Erro de codificação. Use UTF-8.")
+        
+        return value

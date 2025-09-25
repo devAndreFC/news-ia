@@ -1,0 +1,12 @@
+{
+  "articles": [
+    {
+      "title": "Teste de Upload de Notícia",
+      "content": "Este é um teste para verificar se o upload de notícias está funcionando corretamente. O sistema deve processar esta notícia e salvá-la no banco de dados.",
+      "source": "Sistema de Teste",
+      "author": "Admin",
+      "published_at": "2024-01-15T10:30:00Z",
+      "category": "Tecnologia"
+    }
+  ]
+}

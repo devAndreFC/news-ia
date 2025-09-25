@@ -34,6 +34,14 @@ class News(models.Model):
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Atualizado em")
     is_active = models.BooleanField(default=True, verbose_name="Ativo")
     
+    # Campos de análise de sentimentos e entidades
+    sentiment_score = models.FloatField(null=True, blank=True, verbose_name="Score de Sentimento")
+    sentiment_label = models.CharField(max_length=20, blank=True, verbose_name="Label de Sentimento")
+    sentiment_confidence = models.FloatField(null=True, blank=True, verbose_name="Confiança do Sentimento")
+    entities_data = models.JSONField(null=True, blank=True, verbose_name="Dados de Entidades")
+    analysis_contexts = models.JSONField(null=True, blank=True, verbose_name="Contextos Identificados")
+    analysis_timestamp = models.DateTimeField(null=True, blank=True, verbose_name="Timestamp da Análise")
+    
     class Meta:
         verbose_name = "Notícia"
         verbose_name_plural = "Notícias"

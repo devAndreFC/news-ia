@@ -138,6 +138,12 @@
   font-size: 0.9rem;
 }
 
+.news-count {
+  color: #27ae60;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
 .clear-btn {
   background: #e74c3c;
   color: white;
@@ -202,6 +208,12 @@
   background: #fdf2f2;
   color: #e74c3c;
   border: 1px solid #e74c3c;
+}
+
+.upload-status.info {
+  background: #ebf3fd;
+  color: #3498db;
+  border: 1px solid #3498db;
 }
 
 .info-section {

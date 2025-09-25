@@ -27,6 +27,8 @@ from drf_spectacular.views import (
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 def api_root(request):
     """Lista todos os endpoints disponíveis na API"""
@@ -56,12 +58,25 @@ def api_root(request):
     }
     return JsonResponse(endpoints)
 
+@api_view(['GET'])
+def direct_test_view(request):
+    """View de teste direta no arquivo principal de URLs"""
+    return Response({'message': 'Direct test successful'})
+
+def simple_django_view(request):
+    """View muito simples usando apenas Django"""
+    return JsonResponse({'message': 'Simple Django view working'})
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     # Swagger/OpenAPI URLs
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('swagger/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    # URL de teste direta
+    path('api/direct-test/', direct_test_view, name='direct_test'),
+    # URL de teste simples Django
+    path('api/simple-django/', simple_django_view, name='simple_django'),
     # API URLs
     path('api/', api_root, name='api-root'),
     path('api/', include('common.urls')),

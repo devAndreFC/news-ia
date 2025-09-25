@@ -36,5 +36,25 @@ services:
     ports:
       - "${DB_PORT:-5432}:5432"
 
+  news-curator:
+    build: ./news-curator
+    container_name: ${COMPOSE_PROJECT_NAME:-newsletter}-curator
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-newsletter}
+      DB_USER: ${POSTGRES_USER:-django}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-django}
+      GENERATION_INTERVAL: ${CURATOR_GENERATION_INTERVAL:-300}
+      NEWS_PER_BATCH: ${CURATOR_NEWS_PER_BATCH:-3}
+      LOG_LEVEL: ${CURATOR_LOG_LEVEL:-INFO}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    depends_on:
+      - db
+      - backend
+    volumes:
+      - ./news-curator:/app
+
 volumes:
   postgres_data:

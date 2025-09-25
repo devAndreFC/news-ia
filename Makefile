@@ -26,6 +26,7 @@ DOCKER_COMPOSE = docker-compose
 FRONTEND_SERVICE = frontend
 BACKEND_SERVICE = backend
 DB_SERVICE = db
+CURATOR_SERVICE = news-curator
 
 # Função para exibir mensagens
 define show_message
@@ -48,10 +49,14 @@ help:
 	@echo "  make update_frontend- Atualiza apenas o container do frontend"
 	@echo "  make logs           - Mostra logs dos serviços"
 	@echo "  make logs_frontend  - Mostra logs apenas do frontend"
+	@echo "  make logs_curator   - Mostra logs do agente curador"
 	@echo "  make status         - Mostra status dos containers"
 	@echo "  make clean          - Para e remove todos os containers"
 	@echo "  make shell          - Acessa shell do container backend"
 	@echo "  make shell_frontend - Acessa shell do container frontend"
+	@echo "  make shell_curator  - Acessa shell do agente curador"
+	@echo "  make curator_test   - Executa o curador uma vez (teste)"
+	@echo "  make curator_restart- Reinicia o agente curador"
 
 # Sobe todos os serviços
 setup:
@@ -118,6 +123,11 @@ logs_frontend:
 	$(call show_message,Mostrando logs do frontend...)
 	$(DOCKER_COMPOSE) logs -f $(FRONTEND_SERVICE)
 
+# Mostra logs do agente curador
+logs_curator:
+	$(call show_message,Mostrando logs do agente curador...)
+	$(DOCKER_COMPOSE) logs -f $(CURATOR_SERVICE)
+
 # Mostra status dos containers
 status:
 	$(call show_message,Status dos containers:)
@@ -138,6 +148,11 @@ shell:
 shell_frontend:
 	$(call show_message,Acessando shell do frontend...)
 	$(DOCKER_COMPOSE) exec $(FRONTEND_SERVICE) /bin/sh
+
+# Acessa shell do agente curador
+shell_curator:
+	$(call show_message,Acessando shell do agente curador...)
+	$(DOCKER_COMPOSE) exec $(CURATOR_SERVICE) /bin/bash
 
 # Cria superusuário Django
 createsuperuser:
@@ -163,3 +178,15 @@ backup:
 # Restaura backup do banco de dados
 restore:
 	$(call show_message,$(BACKUP_RESTORE_MSG))
+
+# Executa o curador uma vez (teste)
+curator_test:
+	$(call show_message,Executando agente curador em modo teste...)
+	$(DOCKER_COMPOSE) exec $(CURATOR_SERVICE) python curator.py --once
+	$(call show_message,Teste do curador concluído!)
+
+# Reinicia o agente curador
+curator_restart:
+	$(call show_message,Reiniciando agente curador...)
+	$(DOCKER_COMPOSE) restart $(CURATOR_SERVICE)
+	$(call show_message,Agente curador reiniciado com sucesso!)

@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Admin from './pages/Admin';
 import NewsDetail from './pages/NewsDetail';
 import './App.css';
@@ -31,6 +32,7 @@ function App() {
             <Route index element={<Home />} />
             <Route path="news/:id" element={<NewsDetail />} />
             <Route path="login" element={<Login />} />
+            <Route path="register" element={<Register />} />
             <Route 
               path="admin" 
               element={

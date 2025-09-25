@@ -8,7 +8,7 @@
 }
 
 .admin-header h1 {
-  color: #333;
+  color: #2c3e50;
   margin: 0 0 0.5rem 0;
   font-size: 2.5rem;
 }
@@ -75,7 +75,7 @@
 .stat-content h3 {
   margin: 0 0 0.5rem 0;
   font-size: 2rem;
-  color: #333;
+  color: #2c3e50;
   font-weight: bold;
 }
 
@@ -90,7 +90,7 @@
 }
 
 .admin-actions h2 {
-  color: #333;
+  color: #2c3e50;
   margin-bottom: 2rem;
   font-size: 1.8rem;
 }
@@ -117,7 +117,7 @@
 }
 
 .action-card h3 {
-  color: #333;
+  color: #2c3e50;
   margin: 0 0 1rem 0;
   font-size: 1.3rem;
 }

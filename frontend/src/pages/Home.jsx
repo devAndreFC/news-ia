@@ -9,7 +9,7 @@ const Home = () => {
   const [news, setNews] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [showOnlyPreferences, setShowOnlyPreferences] = useState(false);
+
   const [userPreferences, setUserPreferences] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -23,12 +23,12 @@ const Home = () => {
     if (user) {
       fetchUserPreferences();
     }
-  }, [selectedCategory, showOnlyPreferences, user, currentPage]);
+  }, [selectedCategory, user, currentPage]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCategory, showOnlyPreferences]);
+  }, [selectedCategory]);
 
   const fetchNews = async () => {
     try {
@@ -39,7 +39,23 @@ const Home = () => {
         url += `&category=${selectedCategory}`;
       }
       
-      const response = await fetch(url);
+      // Preparar headers para autenticação se usuário estiver logado
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (user) {
+        const token = localStorage.getItem('access_token');
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+      }
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: headers,
+      });
+      
       if (!response.ok) {
         throw new Error('Erro ao carregar notícias');
       }
@@ -51,18 +67,8 @@ const Home = () => {
       setTotalCount(data.count || 0);
       setTotalPages(Math.ceil((data.count || 0) / 10)); // 10 items per page
       
-      // Filtrar por preferências se ativado (apenas para exibição, não afeta paginação da API)
-      if (showOnlyPreferences && userPreferences.length > 0) {
-        newsData = newsData.filter(article => 
-          article.category && userPreferences.includes(article.category.id)
-        );
-      }
-      
-      // Ordenar notícias por data de publicação (mais recentes primeiro)
-      const sortedNews = newsData.sort((a, b) => {
-        return new Date(b.published_at) - new Date(a.published_at);
-      });
-      setNews(sortedNews);
+      // O backend já filtra automaticamente por preferências quando o usuário está logado
+      setNews(newsData);
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -87,12 +93,25 @@ const Home = () => {
 
   const fetchUserPreferences = async () => {
     try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        console.log('Token não encontrado, usuário não autenticado');
+        return;
+      }
+
       const response = await fetch('http://localhost:9000/api/profiles/me/preferences/', {
-        credentials: 'include'
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
+      
       if (response.ok) {
         const data = await response.json();
         setUserPreferences(data.preferred_categories || []);
+      } else {
+        console.error('Erro ao carregar preferências:', response.status, response.statusText);
       }
     } catch (err) {
       console.error('Erro ao carregar preferências:', err);
@@ -163,48 +182,35 @@ const Home = () => {
             </select>
           </div>
 
-          {user && userPreferences.length > 0 && (
-            <div className="filter-group">
-              <button
-                onClick={() => setShowOnlyPreferences(!showOnlyPreferences)}
-                className={`preferences-filter-btn ${showOnlyPreferences ? 'active' : ''}`}
-                title={showOnlyPreferences ? 'Mostrar todas as notícias' : 'Mostrar apenas minhas preferências'}
-              >
-                {showOnlyPreferences ? '⭐ Minhas Preferências' : '⭐ Filtrar por Preferências'}
-              </button>
-            </div>
-          )}
+
           
-          {(selectedCategory || showOnlyPreferences) && (
+          {selectedCategory && (
             <button 
               onClick={() => {
                 setSelectedCategory('');
-                setShowOnlyPreferences(false);
               }}
               className="clear-filter-btn"
-              title="Limpar todos os filtros"
+              title="Limpar filtro de categoria"
             >
-              ✕ Limpar filtros
+              ✕ Limpar filtro
             </button>
           )}
         </div>
       </div>
 
-      {(selectedCategory || showOnlyPreferences) && (
+      {selectedCategory && (
         <div className="filter-info">
           <p>
-            {selectedCategory && (
-              <>
-                Exibindo notícias da categoria: <strong>{categories.find(cat => cat.id == selectedCategory)?.name}</strong>
-                {showOnlyPreferences && ' '}
-              </>
-            )}
-            {showOnlyPreferences && (
-              <>
-                {selectedCategory ? 'e ' : 'Exibindo '}
-                <strong>apenas suas categorias preferidas</strong>
-              </>
-            )}
+            Exibindo notícias da categoria: <strong>{categories.find(cat => cat.id == selectedCategory)?.name}</strong>
+            {news.length > 0 && ` (${news.length} ${news.length === 1 ? 'notícia encontrada' : 'notícias encontradas'})`}
+          </p>
+        </div>
+      )}
+
+      {user && userPreferences.length > 0 && !selectedCategory && (
+        <div className="filter-info">
+          <p>
+            ⭐ Exibindo apenas notícias das suas categorias preferidas
             {news.length > 0 && ` (${news.length} ${news.length === 1 ? 'notícia encontrada' : 'notícias encontradas'})`}
           </p>
         </div>
@@ -214,16 +220,14 @@ const Home = () => {
         <div className="no-news">
           <h3>Nenhuma notícia encontrada</h3>
           <p>
-            {showOnlyPreferences && selectedCategory 
-              ? 'Não há notícias disponíveis para esta categoria em suas preferências no momento.'
-              : showOnlyPreferences
-              ? 'Não há notícias disponíveis em suas categorias preferidas no momento.'
-              : selectedCategory 
+            {selectedCategory 
               ? 'Não há notícias disponíveis para esta categoria no momento.' 
+              : user && userPreferences.length > 0
+              ? 'Não há notícias disponíveis em suas categorias preferidas no momento.'
               : 'Não há notícias disponíveis no momento.'
             }
           </p>
-          {showOnlyPreferences && userPreferences.length === 0 && (
+          {user && userPreferences.length === 0 && (
             <p>
               <a href="/preferences" style={{color: '#3498db', textDecoration: 'underline'}}>
                 Configure suas preferências

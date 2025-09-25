@@ -93,6 +93,52 @@ def create_admin_user():
     
     return admin_user
 
+def create_test_user(categories):
+    """Criar usuário de teste com preferências"""
+    test_user, created = User.objects.get_or_create(
+        username='testuser',
+        defaults={
+            'email': 'test@example.com',
+            'first_name': 'Test',
+            'last_name': 'User',
+            'is_staff': False,
+            'is_superuser': False
+        }
+    )
+    
+    if created:
+        test_user.set_password('testpass123')
+        test_user.save()
+        print(f"Usuário de teste criado: {test_user.username}")
+    else:
+        print(f"Usuário de teste já existe: {test_user.username}")
+    
+    # Criar perfil do usuário
+    profile, created = UserProfile.objects.get_or_create(
+        user=test_user,
+        defaults={'user_type': 'reader'}
+    )
+    
+    # Adicionar preferências (Esportes e Economia)
+    sports_category = None
+    economy_category = None
+    
+    for category in categories:
+        if category.name == 'Esportes':
+            sports_category = category
+        elif category.name == 'Economia':
+            economy_category = category
+    
+    if sports_category:
+        profile.preferred_categories.add(sports_category)
+    if economy_category:
+        profile.preferred_categories.add(economy_category)
+    
+    profile.save()
+    print(f"Preferências adicionadas para {test_user.username}: Esportes, Economia")
+    
+    return test_user
+
 def create_sample_news(categories, admin_user):
     """Criar notícias de exemplo"""
     news_data = [
@@ -314,8 +360,12 @@ def main():
     print("\n2. Criando usuário administrador...")
     admin_user = create_admin_user()
     
+    # Criar usuário de teste
+    print("\n3. Criando usuário de teste...")
+    test_user = create_test_user(categories)
+    
     # Criar notícias de exemplo
-    print("\n3. Criando notícias de exemplo...")
+    print("\n4. Criando notícias de exemplo...")
     create_sample_news(categories, admin_user)
     
     print("\n✅ Banco de dados populado com sucesso!")
@@ -326,6 +376,11 @@ def main():
     print("\n📝 Credenciais do administrador:")
     print("Usuário: admin")
     print("Senha: admin123")
+    
+    print("\n👤 Credenciais do usuário de teste:")
+    print("Usuário: testuser")
+    print("Senha: testpass123")
+    print("Preferências: Esportes, Economia")
 
 if __name__ == '__main__':
     main()

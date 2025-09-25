@@ -392,20 +392,34 @@ class NewsViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """
-        Filtra notícias baseado no tipo de usuário
+        Filtra notícias baseado no tipo de usuário e preferências
         """
         queryset = News.objects.filter(is_active=True)
         
-        # Se o usuário não é admin, só mostra notícias ativas
+        # Se o usuário está autenticado
         if self.request.user.is_authenticated:
             try:
                 profile = self.request.user.profile
                 if not profile.is_admin:
                     queryset = queryset.filter(is_active=True)
+                
+                # Se o usuário tem preferências e não está filtrando por categoria específica,
+                # mostra APENAS notícias das categorias preferidas
+                preferred_categories = profile.preferred_categories.all()
+                category_filter = self.request.query_params.get('category')
+                
+                if preferred_categories.exists() and not category_filter:
+                    # Filtra apenas notícias das categorias preferidas
+                    queryset = queryset.filter(category__in=preferred_categories)
+                
+                # Ordenação por data de publicação
+                queryset = queryset.order_by('-published_at')
+                    
             except UserProfile.DoesNotExist:
-                queryset = queryset.filter(is_active=True)
+                queryset = queryset.filter(is_active=True).order_by('-published_at')
         else:
-            queryset = queryset.filter(is_active=True)
+            # Usuário não autenticado vê todas as notícias
+            queryset = queryset.filter(is_active=True).order_by('-published_at')
         
         return queryset
     

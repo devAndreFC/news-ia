@@ -1,40 +1,40 @@
 services:
   frontend:
     build: ./frontend
-    container_name: newsletter-frontend
+    container_name: ${COMPOSE_PROJECT_NAME:-newsletter}-frontend
     volumes:
       - ./frontend:/app
       - /app/node_modules
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
       - backend
 
   backend:
     build: ./backend
-    container_name: newsletter-backend
+    container_name: ${COMPOSE_PROJECT_NAME:-newsletter}-backend
     command: gunicorn app.wsgi:application --bind 0.0.0.0:9000
     volumes:
       - ./backend:/app
     ports:
-      - "9000:9000"
+      - "${BACKEND_PORT:-9000}:9000"
     env_file:
-      - ./backend/.env
+      - .env
     depends_on:
       - db
 
   db:
-    image: postgres:15-alpine
-    container_name: newsletter-db
+    image: postgres:15
+    container_name: ${COMPOSE_PROJECT_NAME:-newsletter}-db
     restart: always
     environment:
-      POSTGRES_USER: django
-      POSTGRES_PASSWORD: django
-      POSTGRES_DB: newsletter
+      POSTGRES_USER: ${POSTGRES_USER:-django}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-django}
+      POSTGRES_DB: ${POSTGRES_DB:-newsletter}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
 
 volumes:
   postgres_data:

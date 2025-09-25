@@ -8,6 +8,7 @@ import Admin from './pages/Admin';
 import Profile from './pages/Profile';
 import Preferences from './pages/Preferences';
 import NewsDetail from './pages/NewsDetail';
+import NewsManager from './pages/NewsManager';
 import './App.css';
 
 // Componente para rotas protegidas
@@ -56,6 +57,14 @@ function App() {
               element={
                 <ProtectedRoute requireAdmin={true}>
                   <Admin />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="news-manager" 
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <NewsManager />
                 </ProtectedRoute>
               } 
             />

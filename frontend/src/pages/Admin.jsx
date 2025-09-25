@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import CategoryManager from '../components/CategoryManager';
 import './Admin.css';
 
 const Admin = () => {
   const { user, isSuperuser } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalNews: 0,
     totalCategories: 0,
@@ -121,9 +123,12 @@ const Admin = () => {
         
         <div className="actions-grid">
           <div className="action-card">
-            <h3>📝 Gerenciar Notícias</h3>
-            <p>Criar, editar e excluir notícias</p>
-            <button className="action-btn">
+            <h3>🤖 Curador de Notícias</h3>
+            <p>Upload de JSON para processamento automático de notícias</p>
+            <button 
+              className="action-btn"
+              onClick={() => navigate('/news-manager')}
+            >
               Acessar
             </button>
           </div>

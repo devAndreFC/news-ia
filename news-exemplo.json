@@ -1,0 +1,82 @@
+[
+  {
+    "title": "Brasil Avança na Produção de Energia Solar",
+    "content": "Novas usinas solares foram inauguradas no Nordeste, aumentando em 25% a capacidade energética da região. O governo prevê que até 2030 metade da energia consumida venha de fontes renováveis.",
+    "author": "Mariana Souza",
+    "source": "Jornal Energia Hoje",
+    "published_at": "2024-02-10T14:30:00Z",
+    "category": "Meio Ambiente"
+  },
+  {
+    "title": "Startup Lança Aplicativo de Mobilidade Sustentável",
+    "content": "A GreenMove lançou um app que conecta ciclistas a rotas seguras e pontos de recarga para bicicletas elétricas. O objetivo é reduzir o tráfego urbano e incentivar o transporte sustentável.",
+    "author": "Lucas Fernandes",
+    "source": "Tech News Brasil",
+    "published_at": "2024-03-05T11:00:00Z",
+    "category": "Tecnologia"
+  },
+  {
+    "title": "Descoberta Científica Pode Revolucionar Tratamento do Alzheimer",
+    "content": "Pesquisadores da Universidade Federal do Rio Grande do Sul identificaram uma proteína que pode retardar os efeitos do Alzheimer em testes clínicos iniciais. O estudo abre caminho para novas terapias mais eficazes.",
+    "author": "Dr. Ana Beatriz Lima",
+    "source": "Revista Ciência Hoje",
+    "published_at": "2024-04-12T08:45:00Z",
+    "category": "Saúde"
+  },
+  {
+    "title": "Setor de Games no Brasil Movimenta Bilhões em 2024",
+    "content": "O mercado de jogos digitais no Brasil bateu recorde de faturamento, ultrapassando R$ 15 bilhões. O crescimento é impulsionado por esportes eletrônicos e desenvolvimento de jogos independentes.",
+    "author": "Renato Oliveira",
+    "source": "Portal Economia Digital",
+    "published_at": "2024-05-18T16:20:00Z",
+    "category": "Economia"
+  },
+  {
+    "title": "Nova Lei de Proteção de Dados Entra em Vigor",
+    "content": "A lei atualiza as regras de privacidade digital, exigindo maior transparência das empresas no uso de informações pessoais. Especialistas afirmam que a medida fortalece a segurança online dos usuários.",
+    "author": "Patrícia Gomes",
+    "source": "Agência Nacional de Notícias",
+    "published_at": "2024-06-01T10:00:00Z",
+    "category": "Política"
+  },
+  {
+    "title": "Inteligência Artificial Apoia Agricultores no Combate a Pragas",
+    "content": "Um sistema de IA desenvolvido em parceria com universidades brasileiras permite identificar pragas em plantações de soja em tempo real, ajudando produtores a reduzir perdas em até 30%.",
+    "author": "João Pedro Martins",
+    "source": "AgroTech Brasil",
+    "published_at": "2024-07-07T07:30:00Z",
+    "category": "Agronegócio"
+  },
+  {
+    "title": "Turismo Sustentável Cresce no Litoral Brasileiro",
+    "content": "Novos resorts e pousadas adotam práticas sustentáveis como energia solar e redução do consumo de plástico, atraindo turistas preocupados com o meio ambiente.",
+    "author": "Camila Rocha",
+    "source": "Revista Viagem & Lazer",
+    "published_at": "2024-08-14T12:10:00Z",
+    "category": "Turismo"
+  },
+  {
+    "title": "Carros Elétricos Ganhando Espaço nas Capitais",
+    "content": "As vendas de veículos elétricos aumentaram 80% no Brasil em 2024. Incentivos fiscais e novos pontos de recarga impulsionam a popularidade da tecnologia.",
+    "author": "Felipe Almeida",
+    "source": "Jornal Mobilidade",
+    "published_at": "2024-09-09T18:00:00Z",
+    "category": "Tecnologia"
+  },
+  {
+    "title": "Educação a Distância Atinge Recorde de Matrículas",
+    "content": "As universidades brasileiras registraram um aumento de 40% nas matrículas em cursos online. Especialistas apontam a flexibilidade e os custos reduzidos como fatores determinantes.",
+    "author": "Carolina Mendes",
+    "source": "Portal Educação",
+    "published_at": "2024-10-03T09:40:00Z",
+    "category": "Educação"
+  },
+  {
+    "title": "Cientistas Brasileiros Criam Bioplástico a Partir de Cana-de-Açúcar",
+    "content": "O novo material é biodegradável e promete substituir plásticos derivados de petróleo. Empresas já demonstram interesse em investir na tecnologia para embalagens sustentáveis.",
+    "author": "Dr. Ricardo Silva",
+    "source": "Revista Inovação",
+    "published_at": "2024-11-21T15:50:00Z",
+    "category": "Meio Ambiente"
+  }
+]

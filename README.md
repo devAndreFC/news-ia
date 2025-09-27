@@ -14,28 +14,86 @@ Este projeto implementa uma plataforma de newsletter inteligente que combina:
 
 ## Arquitetura do Sistema
 
-### Componentes Principais
+### Visão Geral dos Componentes
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Frontend      │    │   Backend API   │    │  News Curator   │
-│   (React SPA)   │◄──►│  (Django REST)  │◄──►│   (Python)      │
+│   (React SPA)   │◄──►│  (Django REST)  │◄──►│   (Python IA)   │
+│   Port: 3000    │    │   Port: 8000    │    │   Assíncrono    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
          │                       ▼                       ▼
          │              ┌─────────────────┐    ┌─────────────────┐
          │              │   PostgreSQL    │    │    RabbitMQ     │
-         └──────────────►│   (Database)    │    │ (Message Broker)│
+         └──────────────►│   Port: 5432    │    │   Port: 5672    │
+                        │   (Database)    │    │ (Message Broker)│
                         └─────────────────┘    └─────────────────┘
 ```
 
-### Fluxo de Dados
+### Detalhamento Técnico
 
-1. **Geração de Notícias**: O News Curator gera notícias automaticamente usando templates e IA
-2. **Processamento Assíncrono**: Notícias são enviadas via RabbitMQ para processamento
-3. **Persistência**: Dados são armazenados no PostgreSQL após processamento
-4. **API REST**: Backend expõe endpoints para consulta e manipulação
-5. **Interface**: Frontend consome a API e apresenta dados ao usuário
+#### Frontend (React SPA)
+- **Framework**: React 18 com Vite
+- **Roteamento**: React Router v6
+- **Estado**: Context API + useState/useEffect
+- **Estilização**: CSS Modules + CSS3
+- **Autenticação**: JWT com refresh automático
+- **Comunicação**: Fetch API para REST
+
+#### Backend (Django REST API)
+- **Framework**: Django 4.2 + Django REST Framework
+- **Autenticação**: JWT (Simple JWT)
+- **ORM**: Django ORM com PostgreSQL
+- **Serialização**: DRF Serializers
+- **Paginação**: PageNumberPagination
+- **CORS**: django-cors-headers
+
+#### News Curator (Agente IA)
+- **Engine**: OpenAI GPT-4
+- **Processamento**: Assíncrono via RabbitMQ
+- **Templates**: Sistema de templates personalizáveis
+- **Análise**: Sentiment analysis e categorização
+- **Scheduling**: Execução programada
+
+#### Banco de Dados (PostgreSQL)
+- **Versão**: PostgreSQL 15
+- **Estrutura**: Relacional normalizada
+- **Índices**: Otimizados para consultas frequentes
+- **Backup**: Volumes Docker persistentes
+
+#### Message Broker (RabbitMQ)
+- **Versão**: RabbitMQ 3.12
+- **Padrão**: Work Queues + Publish/Subscribe
+- **Durabilidade**: Mensagens persistentes
+- **Monitoramento**: Management UI
+
+### Fluxo de Dados Detalhado
+
+1. ** Geração de Conteúdo**
+   - News Curator acessa APIs de notícias
+   - Processa conteúdo com OpenAI GPT-4
+   - Aplica templates e categorização
+
+2. ** Publicação Assíncrona**
+   - Notícias são enviadas para RabbitMQ
+   - Sistema de filas garante processamento ordenado
+   - Retry automático em caso de falhas
+
+3. ** Persistência**
+   - Backend consome mensagens do RabbitMQ
+   - Valida e persiste dados no PostgreSQL
+   - Indexação automática para busca
+
+4. ** API REST**
+   - Endpoints RESTful para CRUD
+   - Autenticação JWT obrigatória
+   - Paginação e filtros avançados
+
+5. ** Interface do Usuário**
+   - Frontend consome API REST
+   - Atualizações em tempo real
+   - Interface responsiva e intuitiva
 
 ## Configuração e Instalação
 
@@ -48,13 +106,30 @@ Este projeto implementa uma plataforma de newsletter inteligente que combina:
 ### 1. Clone e Configure
 ```bash
 git clone <url-do-repositorio> .
-
-# Configure variáveis de ambiente
-cp .env.example .env
-# Edite .env com suas configurações
 ```
 
-### 2. Inicie o Sistema
+### 2. Configure Variáveis de Ambiente
+```bash
+# Copie o arquivo de exemplo
+cp .env.example .env
+
+# Edite o arquivo .env com suas configurações
+# OBRIGATÓRIO: Configure sua chave OpenAI
+OPENAI_API_KEY="sua-chave-openai-aqui"
+```
+
+**Estrutura de Arquivos de Ambiente:**
+- `.env` - Configurações globais do projeto (raiz)
+- `backend/.env` - Configurações específicas do Django
+- `.env.example` - Template para novos desenvolvedores
+
+**Variáveis Principais:**
+- `OPENAI_API_KEY` - Chave da API OpenAI (obrigatória)
+- `DEBUG` - Modo de desenvolvimento (1=ativo, 0=inativo)
+- `DATABASE_URL` - URL de conexão com PostgreSQL
+- `DJANGO_ALLOWED_HOSTS` - Hosts permitidos (separados por vírgula)
+
+### 3. Inicie o Sistema
 ```bash
 # Usando Makefile (recomendado)
 make setup
@@ -63,13 +138,18 @@ make setup
 docker compose up -d --build
 ```
 
-### 3. Configure Banco de Dados
+### 4. Configure Banco de Dados
 ```bash
 make migrate
-make createsuperuser  # Opcional
+make createsuperuser  # Opcional: cria usuário admin
 ```
 
-## 🛠️ Decisões Técnicas e Justificativas
+### 5. Acesse a Aplicação
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000/api/
+- **Django Admin**: http://localhost:8000/admin/
+
+## Decisões Técnicas e Justificativas
 
 ### Backend - Django REST Framework
 **Por que Django?**

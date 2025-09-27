@@ -26,7 +26,8 @@ const Login = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/users/login/', {
+      // Primeiro, fazer login para obter tokens
+      const loginResponse = await fetch('http://localhost:8000/auth/token/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -34,36 +35,54 @@ const Login = () => {
         body: JSON.stringify(formData)
       });
 
-      const data = await response.json();
+      const loginData = await loginResponse.json();
 
-      if (!response.ok) {
+      if (!loginResponse.ok) {
         // Padronizar mensagem de erro para credenciais inválidas
-        if (response.status === 401) {
+        if (loginResponse.status === 401) {
           throw new Error('Usuário ou senha inválidos');
         }
-        throw new Error(data.detail || data.error || 'Erro ao fazer login');
+        throw new Error(loginData.detail || loginData.error || 'Erro ao fazer login');
       }
 
-      // Criar objeto de usuário compatível com o contexto usando os dados retornados diretamente
-      const userData = {
-        id: data.user_id,
-        username: data.username,
-        email: data.email,
-        profile: data.profile
+      // Agora buscar dados do usuário usando o token
+      const userResponse = await fetch('http://localhost:8000/api/profiles/me/', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${loginData.access}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const userData = await userResponse.json();
+
+      if (!userResponse.ok) {
+        throw new Error('Erro ao buscar dados do usuário');
+      }
+
+      // Criar objeto de usuário compatível com o contexto
+      const userObject = {
+        id: userData.user.id,
+        username: userData.user.username,
+        email: userData.user.email,
+        first_name: userData.user.first_name,
+        last_name: userData.user.last_name,
+        profile: {
+          is_admin: userData.user_type === 'admin',
+          is_superuser: userData.user.is_superuser,
+          user_type: userData.user_type,
+          preferred_categories: userData.preferred_categories
+        }
       };
 
-      // Armazenar tokens no localStorage
-      localStorage.setItem('access_token', data.access);
-      localStorage.setItem('refresh_token', data.refresh);
-
       // Usar o contexto para fazer login
-      login(userData, {
-        access_token: data.access,
-        refresh_token: data.refresh
+      login(userObject, {
+        access_token: loginData.access,
+        refresh_token: loginData.refresh
       });
 
       // Redirecionar baseado no tipo de usuário
-      if (userData.profile.is_admin) {
+      if (userObject.profile.is_admin) {
         navigate('/admin');
       } else {
         navigate('/');

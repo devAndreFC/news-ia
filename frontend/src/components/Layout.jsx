@@ -46,7 +46,7 @@ const Layout = () => {
                 </button>
               </div>
             ) : (
-              <Link to="/login" className="nav-link login-link">
+              <Link to="/login" className="nav-link">
                 Entrar
               </Link>
             )}

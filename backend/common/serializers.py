@@ -170,11 +170,11 @@ class NewsCreateUpdateSerializer(serializers.ModelSerializer):
 
 
 class NewsUploadSerializer(serializers.Serializer):
-    """Serializer para upload de arquivo JSON com notícias"""
+    """Serializer para upload de arquivo JSON com notícias no novo formato simplificado"""
     file = serializers.FileField()
     
     def validate_file(self, value):
-        """Valida o arquivo JSON enviado"""
+        """Valida o arquivo JSON enviado no novo formato"""
         # Verificar extensão do arquivo
         if not value.name.endswith('.json'):
             raise serializers.ValidationError("Apenas arquivos JSON são permitidos.")
@@ -198,18 +198,22 @@ class NewsUploadSerializer(serializers.Serializer):
             if len(data) == 0:
                 raise serializers.ValidationError("O arquivo JSON não pode estar vazio.")
             
-            # Validar estrutura básica de cada notícia
-            required_fields = ['title', 'content', 'source', 'category', 'published_at']
+            # Validar estrutura básica de cada notícia no novo formato
             for i, news_item in enumerate(data):
                 if not isinstance(news_item, dict):
                     raise serializers.ValidationError(f"Item {i+1}: deve ser um objeto JSON.")
                 
-                for field in required_fields:
-                    if field not in news_item:
-                        raise serializers.ValidationError(f"Item {i+1}: campo '{field}' é obrigatório.")
-                    
-                    if not news_item[field] or (isinstance(news_item[field], str) and not news_item[field].strip()):
-                        raise serializers.ValidationError(f"Item {i+1}: campo '{field}' não pode estar vazio.")
+                # Verificar campo obrigatório 'noticia'
+                if 'noticia' not in news_item:
+                    raise serializers.ValidationError(f"Item {i+1}: campo 'noticia' é obrigatório.")
+                
+                # Verificar se o campo 'noticia' não está vazio
+                if not news_item['noticia'] or not news_item['noticia'].strip():
+                    raise serializers.ValidationError(f"Item {i+1}: campo 'noticia' não pode estar vazio.")
+                
+                # Verificar se o conteúdo tem tamanho mínimo
+                if len(news_item['noticia'].strip()) < 50:
+                    raise serializers.ValidationError(f"Item {i+1}: conteúdo da notícia muito curto (mínimo 50 caracteres).")
             
         except json.JSONDecodeError as e:
             raise serializers.ValidationError(f"Arquivo JSON inválido: {str(e)}")

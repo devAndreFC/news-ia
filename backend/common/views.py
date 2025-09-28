@@ -902,10 +902,12 @@ def upload_news_json(request):
     - title: título da notícia
     - content: conteúdo completo
     - source: fonte da notícia
-    - category: nome da categoria
     - published_at: data de publicação (ISO format)
     - author: nome do autor (opcional)
     - summary: resumo da notícia (opcional)
+    
+    NOTA: O campo 'category' é opcional. Se não fornecido, a IA classificará automaticamente
+    a notícia em uma das 10 categorias fixas do sistema.
     """
     # Verificar se o usuário é admin
     if not hasattr(request.user, 'profile') or not request.user.profile.is_admin:
@@ -940,35 +942,44 @@ def upload_news_json(request):
         
         for news_item in news_data:
             try:
-                # Buscar ou criar categoria
-                category_name = news_item['category'].strip()
-                category, created = Category.objects.get_or_create(
-                    name=category_name,
-                    defaults={'description': f'Categoria criada automaticamente: {category_name}'}
-                )
+                # Extrair conteúdo completo da notícia no novo formato
+                news_content = news_item['noticia'].strip()
                 
-                # Processar data de publicação
-                published_at_str = news_item['published_at']
-                try:
-                    # Tentar diferentes formatos de data
-                    if 'T' in published_at_str:
-                        published_at = datetime.fromisoformat(published_at_str.replace('Z', '+00:00'))
-                    else:
-                        published_at = datetime.strptime(published_at_str, '%Y-%m-%d')
-                    
-                    # Converter para timezone aware
-                    if timezone.is_naive(published_at):
-                        published_at = timezone.make_aware(published_at)
-                        
-                except (ValueError, TypeError) as e:
-                    published_at = timezone.now()
+                # Usar IA para extrair informações estruturadas do conteúdo
+                from .services import extract_news_info_from_content
+                extraction_result = extract_news_info_from_content(news_content)
+                
+                if not extraction_result['success']:
+                    results.append({
+                        'content_preview': news_content[:100] + '...',
+                        'status': 'error',
+                        'message': f'Erro na extração de informações: {extraction_result["error"]}'
+                    })
+                    continue
+                
+                # Extrair dados da resposta da IA
+                extracted_data = extraction_result['data']
+                title = extracted_data.get('title', 'Título não identificado').strip()
+                content = extracted_data.get('content', news_content).strip()
+                summary = extracted_data.get('summary', '').strip()
+                source = extracted_data.get('source', 'Fonte não identificada').strip()
+                
+                # Classificar automaticamente usando IA
+                from .services import classify_news_automatically
+                classification_result = classify_news_automatically(title, content, summary)
+                
+                category = Category.objects.get(name=classification_result['category'])
+                classification_info = f" (IA: {category.name}, confiança: {classification_result['confidence']:.2f})"
+                
+                # Usar data atual como padrão
+                published_at = timezone.now()
                 
                 # Criar a notícia
                 news = News.objects.create(
-                    title=news_item['title'].strip(),
-                    content=news_item['content'].strip(),
-                    summary=news_item.get('summary', '')[:500],  # Limitar resumo
-                    source=news_item['source'].strip(),
+                    title=title,
+                    content=content,
+                    summary=summary[:500] if summary else '',  # Limitar resumo
+                    source=source,
                     category=category,
                     author=request.user,
                     published_at=published_at,
@@ -981,22 +992,22 @@ def upload_news_json(request):
                     analysis_result = analyze_single_news(news)
                     
                     if analysis_result['success']:
-                        analysis_info = f" (Análise: {analysis_result['sentiment']['label']})"
+                        analysis_info = f" | Análise: {analysis_result['sentiment']['label']}"
                     else:
-                        analysis_info = " (Análise: erro)"
+                        analysis_info = " | Análise: erro"
                 except Exception as analysis_error:
-                    analysis_info = f" (Análise: falhou - {str(analysis_error)})"
+                    analysis_info = f" | Análise: falhou - {str(analysis_error)}"
                 
                 processed_count += 1
                 results.append({
                     'title': news.title,
                     'status': 'success',
-                    'message': f'Notícia criada com sucesso{analysis_info}'
+                    'message': f'Notícia criada com sucesso{classification_info}{analysis_info}'
                 })
                 
             except Exception as e:
                 results.append({
-                    'title': news_item.get('title', 'Título não disponível'),
+                    'content_preview': news_item.get('noticia', 'Conteúdo não disponível')[:100] + '...',
                     'status': 'error',
                     'message': f'Erro ao processar: {str(e)}'
                 })

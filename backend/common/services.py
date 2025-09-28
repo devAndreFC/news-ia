@@ -1,6 +1,7 @@
 """
 Serviços para análise de notícias
 """
+import os
 import re
 import logging
 from typing import Dict, List, Optional
@@ -611,6 +612,186 @@ class NewsAnalysisService:
             return []
 
 
+class AINewsClassifier:
+    """Classificador de notícias usando OpenAI para as 10 categorias fixas"""
+    
+    def __init__(self):
+        self.fixed_categories = [
+            'Política', 'Economia', 'Tecnologia', 'Esportes', 'Saúde',
+            'Educação', 'Meio Ambiente', 'Cultura', 'Segurança', 'Internacional'
+        ]
+        
+        # Configuração do OpenAI
+        import os
+        from openai import OpenAI
+        
+        api_key = os.getenv('OPENAI_API_KEY')
+        if api_key:
+            self.client = OpenAI(api_key=api_key)
+        else:
+            self.client = None
+            logger.warning("OpenAI API key não encontrada. Usando classificação por palavras-chave.")
+    
+    def classify_news_content(self, title: str, content: str, summary: str = "") -> dict:
+        """
+        Classifica uma notícia usando IA ou fallback para palavras-chave
+        
+        Args:
+            title: Título da notícia
+            content: Conteúdo da notícia
+            summary: Resumo da notícia (opcional)
+            
+        Returns:
+            Dict com categoria sugerida e confiança
+        """
+        try:
+            if self.client:
+                return self._classify_with_openai(title, content, summary)
+            else:
+                return self._classify_with_keywords(title, content, summary)
+        except Exception as e:
+            logger.error(f"Erro na classificação: {e}")
+            return self._classify_with_keywords(title, content, summary)
+    
+    def _classify_with_openai(self, title: str, content: str, summary: str = "") -> dict:
+        """Classifica usando OpenAI"""
+        try:
+            # Preparar o texto para análise
+            full_text = f"Título: {title}\n"
+            if summary:
+                full_text += f"Resumo: {summary}\n"
+            full_text += f"Conteúdo: {content[:1000]}"  # Limitar para não exceder tokens
+            
+            # Prompt para classificação
+            prompt = f"""
+Analise o seguinte texto de notícia e classifique-o em UMA das seguintes categorias:
+
+Categorias disponíveis:
+1. Política - Notícias sobre política nacional e internacional
+2. Economia - Notícias sobre economia, mercado financeiro e negócios
+3. Tecnologia - Notícias sobre tecnologia, inovação e ciência
+4. Esportes - Notícias sobre esportes nacionais e internacionais
+5. Saúde - Notícias sobre saúde, medicina e bem-estar
+6. Educação - Notícias sobre educação e ensino
+7. Meio Ambiente - Notícias sobre meio ambiente e sustentabilidade
+8. Cultura - Notícias sobre cultura, arte e entretenimento
+9. Segurança - Notícias sobre segurança pública e criminalidade
+10. Internacional - Notícias internacionais e relações exteriores
+
+Texto da notícia:
+{full_text}
+
+Responda APENAS com o nome exato da categoria (ex: "Tecnologia") e um número de 0 a 1 indicando sua confiança na classificação, separados por vírgula.
+Formato: Categoria,Confiança
+Exemplo: Tecnologia,0.95
+"""
+
+            response = self.client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "Você é um especialista em classificação de notícias. Seja preciso e objetivo."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=50,
+                temperature=0.1
+            )
+            
+            result = response.choices[0].message.content.strip()
+            
+            # Parsear resposta
+            if ',' in result:
+                category, confidence_str = result.split(',', 1)
+                category = category.strip()
+                try:
+                    confidence = float(confidence_str.strip())
+                except ValueError:
+                    confidence = 0.5
+            else:
+                category = result.strip()
+                confidence = 0.5
+            
+            # Validar categoria
+            if category not in self.fixed_categories:
+                # Tentar encontrar categoria similar
+                category = self._find_similar_category(category)
+                confidence = max(0.3, confidence - 0.2)  # Reduzir confiança
+            
+            return {
+                'category': category,
+                'confidence': confidence,
+                'method': 'openai'
+            }
+            
+        except Exception as e:
+            logger.error(f"Erro na classificação OpenAI: {e}")
+            return self._classify_with_keywords(title, content, summary)
+    
+    def _classify_with_keywords(self, title: str, content: str, summary: str = "") -> dict:
+        """Classificação usando palavras-chave como fallback"""
+        full_text = f"{title} {summary} {content}".lower()
+        
+        # Palavras-chave para cada categoria
+        keywords = {
+            'Tecnologia': ['tecnologia', 'software', 'app', 'digital', 'internet', 'ia', 'inteligência artificial', 'startup', 'inovação'],
+            'Política': ['política', 'governo', 'eleição', 'presidente', 'ministro', 'congresso', 'senado', 'deputado'],
+            'Economia': ['economia', 'mercado', 'bolsa', 'investimento', 'banco', 'dinheiro', 'inflação', 'pib', 'juros'],
+            'Esportes': ['futebol', 'esporte', 'jogador', 'time', 'campeonato', 'copa', 'olimpíadas', 'atleta'],
+            'Saúde': ['saúde', 'medicina', 'hospital', 'médico', 'doença', 'tratamento', 'vacina', 'covid'],
+            'Educação': ['educação', 'escola', 'universidade', 'ensino', 'professor', 'aluno', 'enem', 'vestibular'],
+            'Meio Ambiente': ['meio ambiente', 'sustentabilidade', 'clima', 'aquecimento global', 'poluição', 'natureza'],
+            'Cultura': ['cultura', 'arte', 'música', 'cinema', 'teatro', 'festival', 'artista', 'entretenimento'],
+            'Segurança': ['segurança', 'crime', 'violência', 'polícia', 'prisão', 'roubo', 'homicídio'],
+            'Internacional': ['internacional', 'mundo', 'país', 'exterior', 'global', 'guerra', 'diplomacia']
+        }
+        
+        scores = {}
+        for category, words in keywords.items():
+            score = sum(1 for word in words if word in full_text)
+            if score > 0:
+                scores[category] = score / len(words)  # Normalizar
+        
+        if scores:
+            best_category = max(scores, key=scores.get)
+            confidence = min(0.8, scores[best_category] * 2)  # Máximo 0.8 para keywords
+            return {
+                'category': best_category,
+                'confidence': confidence,
+                'method': 'keywords'
+            }
+        else:
+            # Categoria padrão
+            return {
+                'category': 'Internacional',
+                'confidence': 0.1,
+                'method': 'default'
+            }
+    
+    def _find_similar_category(self, category: str) -> str:
+        """Encontra categoria similar na lista fixa"""
+        category_lower = category.lower()
+        
+        # Mapeamento de sinônimos
+        synonyms = {
+            'tech': 'Tecnologia',
+            'politica': 'Política',
+            'sports': 'Esportes',
+            'health': 'Saúde',
+            'environment': 'Meio Ambiente',
+            'education': 'Educação',
+            'security': 'Segurança',
+            'culture': 'Cultura',
+            'economy': 'Economia',
+            'international': 'Internacional'
+        }
+        
+        for synonym, fixed_category in synonyms.items():
+            if synonym in category_lower:
+                return fixed_category
+        
+        # Se não encontrar, retornar a primeira categoria como padrão
+        return self.fixed_categories[0]
+
+
 # Função utilitária para análise rápida
 def analyze_single_news(news_instance):
     """
@@ -624,3 +805,177 @@ def analyze_single_news(news_instance):
     """
     service = NewsAnalysisService()
     return service.analyze_news(news_instance)
+
+
+# Função utilitária para classificação automática
+def classify_news_automatically(title: str, content: str, summary: str = "") -> dict:
+    """
+    Função utilitária para classificação automática de notícias
+    
+    Args:
+        title: Título da notícia
+        content: Conteúdo da notícia
+        summary: Resumo da notícia (opcional)
+        
+    Returns:
+        Dict com categoria sugerida e confiança
+    """
+    classifier = AINewsClassifier()
+    return classifier.classify_news_content(title, content, summary)
+
+
+# Função para extrair informações estruturadas do conteúdo bruto
+def extract_news_info_from_content(news_content: str) -> dict:
+    """
+    Extrai informações estruturadas (título, conteúdo, resumo, fonte) de um texto bruto de notícia
+    
+    Args:
+        news_content: Conteúdo bruto da notícia
+        
+    Returns:
+        Dict com informações extraídas ou erro
+    """
+    try:
+        # Configuração do OpenAI
+        import os
+        from openai import OpenAI
+        
+        api_key = os.getenv('OPENAI_API_KEY')
+        if not api_key:
+            # Fallback: extrair informações básicas sem IA
+            return _extract_info_fallback(news_content)
+        
+        client = OpenAI(api_key=api_key)
+        
+        # Limitar o conteúdo para não exceder tokens
+        content_preview = news_content[:2000] if len(news_content) > 2000 else news_content
+        
+        # Prompt para extração de informações
+        prompt = f"""
+Analise o seguinte texto de notícia e extraia as seguintes informações estruturadas:
+
+1. Título: Um título claro e conciso para a notícia
+2. Conteúdo: O texto principal da notícia (pode ser o texto original se já estiver bem formatado)
+3. Resumo: Um resumo de 1-2 frases da notícia
+4. Fonte: A fonte da notícia (se mencionada no texto)
+
+Texto da notícia:
+{content_preview}
+
+Responda APENAS em formato JSON válido com as chaves: title, content, summary, source.
+Se alguma informação não estiver disponível, use uma string vazia.
+
+Exemplo de resposta:
+{{
+    "title": "Título extraído da notícia",
+    "content": "Conteúdo principal da notícia...",
+    "summary": "Resumo da notícia em 1-2 frases.",
+    "source": "Nome da fonte"
+}}
+"""
+
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "Você é um especialista em extração de informações de notícias. Responda sempre em JSON válido."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=800,
+            temperature=0.1
+        )
+        
+        result = response.choices[0].message.content.strip()
+        
+        # Tentar parsear o JSON
+        import json
+        try:
+            extracted_data = json.loads(result)
+            
+            # Validar campos obrigatórios
+            if not extracted_data.get('title'):
+                extracted_data['title'] = _extract_title_fallback(news_content)
+            
+            if not extracted_data.get('content'):
+                extracted_data['content'] = news_content
+            
+            if not extracted_data.get('source'):
+                extracted_data['source'] = 'Fonte não identificada'
+                
+            return {
+                'success': True,
+                'data': extracted_data,
+                'method': 'openai'
+            }
+            
+        except json.JSONDecodeError:
+            logger.error(f"Erro ao parsear JSON da resposta OpenAI: {result}")
+            return _extract_info_fallback(news_content)
+            
+    except Exception as e:
+        logger.error(f"Erro na extração de informações com OpenAI: {e}")
+        return _extract_info_fallback(news_content)
+
+
+def _extract_info_fallback(news_content: str) -> dict:
+    """
+    Extração de informações usando métodos simples como fallback
+    """
+    try:
+        lines = news_content.strip().split('\n')
+        lines = [line.strip() for line in lines if line.strip()]
+        
+        # Tentar extrair título (primeira linha não vazia)
+        title = lines[0] if lines else 'Título não identificado'
+        
+        # Limitar título a um tamanho razoável
+        if len(title) > 150:
+            title = title[:147] + '...'
+        
+        # Conteúdo é o texto original
+        content = news_content
+        
+        # Resumo: primeiras 2 frases ou primeiros 200 caracteres
+        summary = _create_summary_fallback(news_content)
+        
+        return {
+            'success': True,
+            'data': {
+                'title': title,
+                'content': content,
+                'summary': summary,
+                'source': 'Fonte não identificada'
+            },
+            'method': 'fallback'
+        }
+        
+    except Exception as e:
+        logger.error(f"Erro no fallback de extração: {e}")
+        return {
+            'success': False,
+            'error': f'Erro na extração de informações: {str(e)}',
+            'data': None
+        }
+
+
+def _extract_title_fallback(content: str) -> str:
+    """Extrai título usando método simples"""
+    lines = content.strip().split('\n')
+    first_line = lines[0].strip() if lines else 'Título não identificado'
+    
+    # Limitar tamanho
+    if len(first_line) > 150:
+        first_line = first_line[:147] + '...'
+    
+    return first_line
+
+
+def _create_summary_fallback(content: str) -> str:
+    """Cria resumo usando método simples"""
+    # Pegar primeiras 2 frases ou primeiros 200 caracteres
+    sentences = content.split('.')
+    if len(sentences) >= 2:
+        summary = f"{sentences[0].strip()}.{sentences[1].strip()}."
+    else:
+        summary = content[:200] + '...' if len(content) > 200 else content
+    
+    return summary.strip()

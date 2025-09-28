@@ -92,11 +92,6 @@ const NewsDetail = () => {
 
   return (
     <div className="news-detail">
-      <div className="news-detail-header">
-        <button onClick={handleGoBack} className="back-btn">
-          ← Voltar
-        </button>
-      </div>
 
       <article className="news-detail-content">
         <header className="article-header">
@@ -138,6 +133,53 @@ const NewsDetail = () => {
               <p key={index}>{paragraph}</p>
             ))}
           </div>
+
+          {/* Seção de Análise de Sentimento */}
+          {(article.sentiment_label || article.sentiment_score !== null || article.sentiment_confidence !== null) && (
+            <div className="sentiment-analysis">
+              <h3 className="sentiment-title">📊 Análise de Sentimento</h3>
+              <div className="sentiment-content">
+                {article.sentiment_label && (
+                  <div className="sentiment-item">
+                    <span className="sentiment-label">Sentimento:</span>
+                    <span className={`sentiment-value sentiment-${article.sentiment_label.toLowerCase()}`}>
+                      {article.sentiment_label === 'positive' ? '😊 Positivo' : 
+                       article.sentiment_label === 'negative' ? '😞 Negativo' : 
+                       article.sentiment_label === 'neutral' ? '😐 Neutro' : 
+                       article.sentiment_label}
+                    </span>
+                  </div>
+                )}
+                
+                {article.sentiment_score !== null && (
+                  <div className="sentiment-item">
+                    <span className="sentiment-label">Score:</span>
+                    <span className="sentiment-value">
+                      {article.sentiment_score.toFixed(3)}
+                    </span>
+                  </div>
+                )}
+                
+                {article.sentiment_confidence !== null && (
+                  <div className="sentiment-item">
+                    <span className="sentiment-label">Confiança:</span>
+                    <span className="sentiment-value">
+                      {(article.sentiment_confidence * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                )}
+                
+                {article.analysis_timestamp && (
+                  <div className="sentiment-item">
+                    <span className="sentiment-label">Analisado em:</span>
+                    <span className="sentiment-value">
+                      {formatDate(article.analysis_timestamp)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
         
         <footer className="article-footer">

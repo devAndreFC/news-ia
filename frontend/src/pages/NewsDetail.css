@@ -101,6 +101,79 @@
   color: #6c757d;
 }
 
+/* Estilos para Análise de Sentimento */
+.sentiment-analysis {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #dee2e6;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.sentiment-title {
+  color: #495057;
+  margin: 0 0 1rem 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sentiment-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.sentiment-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.sentiment-label {
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sentiment-value {
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+/* Cores específicas para cada sentimento */
+.sentiment-positive {
+  color: #28a745;
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #b8dacc;
+}
+
+.sentiment-negative {
+  color: #dc3545;
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #f1b0b7;
+}
+
+.sentiment-neutral {
+  color: #6c757d;
+  background: linear-gradient(135deg, #e2e3e5 0%, #d6d8db 100%);
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #ced4da;
+}
+
 .article-content {
   margin: 2rem 0;
 }
@@ -235,5 +308,18 @@
   .error-actions {
     flex-direction: column;
     align-items: center;
+  }
+  
+  .sentiment-content {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .sentiment-analysis {
+    padding: 1rem;
+  }
+  
+  .sentiment-title {
+    font-size: 1.1rem;
   }
 }

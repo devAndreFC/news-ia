@@ -302,12 +302,7 @@ const Home = () => {
                   <p className="news-summary">{article.summary}</p>
                 )}
                 
-                <div className="news-content">
-                  <p>{article.content && article.content.length > 200 
-                    ? `${article.content.substring(0, 200)}...` 
-                    : article.content || 'Conteúdo não disponível'}
-                  </p>
-                </div>
+
                 
                 <div className="news-actions">
                    <button 

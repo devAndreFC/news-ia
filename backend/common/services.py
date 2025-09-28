@@ -627,7 +627,10 @@ class AINewsClassifier:
         
         api_key = os.getenv('OPENAI_API_KEY')
         if api_key:
-            self.client = OpenAI(api_key=api_key)
+            self.client = OpenAI(
+                api_key=api_key,
+                timeout=120.0  # Timeout de 30 segundos para evitar travamentos
+            )
         else:
             self.client = None
             logger.warning("OpenAI API key não encontrada. Usando classificação por palavras-chave.")
@@ -845,7 +848,10 @@ def extract_news_info_from_content(news_content: str) -> dict:
             # Fallback: extrair informações básicas sem IA
             return _extract_info_fallback(news_content)
         
-        client = OpenAI(api_key=api_key)
+        client = OpenAI(
+            api_key=api_key,
+            timeout=30.0  # Timeout de 30 segundos para evitar travamentos
+        )
         
         # Limitar o conteúdo para não exceder tokens
         content_preview = news_content[:2000] if len(news_content) > 2000 else news_content

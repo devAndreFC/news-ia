@@ -259,17 +259,14 @@ const NewsManager = () => {
       <div className="json-format-section">
         <h3>Formato esperado do JSON:</h3>
         <pre className="json-example">
-{`{
-  "articles": [
-    {
-      "title": "Título da notícia",
-      "content": "Conteúdo completo da notícia...",
-      "source": "Nome da fonte",
-      "author": "Nome do autor",
-      "published_at": "2024-01-15T10:30:00Z"
-    }
-  ]
-}`}
+{`[
+  {
+    "noticia": "texto da noticia"
+  },
+  {
+    "noticia": "texto da noticia"
+  }
+]`}
         </pre>
       </div>
 

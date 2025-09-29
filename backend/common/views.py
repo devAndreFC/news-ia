@@ -931,6 +931,9 @@ def upload_news_json(request):
         import json
         from datetime import datetime
         from django.utils import timezone
+        import logging
+        
+        logger = logging.getLogger(__name__)
         
         file = serializer.validated_data['file']
         content = file.read().decode('utf-8')
@@ -940,16 +943,39 @@ def upload_news_json(request):
         total_count = len(news_data)
         results = []
         
-        for news_item in news_data:
+        # Log inicial da fila de processamento
+        logger.info(f"INICIANDO PROCESSAMENTO DE NOTÍCIAS")
+        logger.info(f"Total de notícias na fila: {total_count}")
+        logger.info(f"Usuário: {request.user.username}")
+        logger.info(f"Arquivo: {file.name}")
+        logger.info(f"Timestamp: {datetime.now().isoformat()}")
+        logger.info(f"=" * 60)
+        
+        for index, news_item in enumerate(news_data, 1):
             try:
+                # Log do progresso atual
+                logger.info(f"📰 Processando notícia {index}/{total_count}")
+                
                 # Extrair conteúdo completo da notícia no novo formato
                 news_content = news_item['noticia'].strip()
+                
+                if not news_content:
+                    logger.warning(f"Notícia {index}: Conteúdo vazio - PULANDO")
+                    results.append({
+                        'content_preview': 'Conteúdo vazio',
+                        'status': 'error',
+                        'message': 'Conteúdo da notícia está vazio'
+                    })
+                    continue
+                
+                logger.info(f"🔍 Notícia {index}: Extraindo informações com IA...")
                 
                 # Usar IA para extrair informações estruturadas do conteúdo
                 from .services import extract_news_info_from_content
                 extraction_result = extract_news_info_from_content(news_content)
                 
                 if not extraction_result['success']:
+                    logger.error(f"Notícia {index}: Falha na extração - {extraction_result['error']}")
                     results.append({
                         'content_preview': news_content[:100] + '...',
                         'status': 'error',
@@ -964,6 +990,9 @@ def upload_news_json(request):
                 summary = extracted_data.get('summary', '').strip()
                 source = extracted_data.get('source', 'Fonte não identificada').strip()
                 
+                logger.info(f"Notícia {index}: Informações extraídas - Título: '{title[:50]}...'")
+                logger.info(f" Notícia {index}: Classificando categoria com IA...")
+                
                 # Classificar automaticamente usando IA
                 from .services import classify_news_automatically
                 classification_result = classify_news_automatically(title, content, summary)
@@ -971,8 +1000,12 @@ def upload_news_json(request):
                 category = Category.objects.get(name=classification_result['category'])
                 classification_info = f" (IA: {category.name}, confiança: {classification_result['confidence']:.2f})"
                 
+                logger.info(f"📂 Notícia {index}: Categoria classificada - {category.name} (confiança: {classification_result['confidence']:.2f})")
+                
                 # Usar data atual como padrão
                 published_at = timezone.now()
+                
+                logger.info(f"💾 Notícia {index}: Criando registro no banco de dados...")
                 
                 # Criar a notícia
                 news = News.objects.create(
@@ -986,19 +1019,29 @@ def upload_news_json(request):
                     is_active=True
                 )
                 
+                logger.info(f"🧠 Notícia {index}: Iniciando análise de sentimento...")
+                
                 # Realizar análise automática da notícia
                 try:
                     from .services import analyze_single_news
                     analysis_result = analyze_single_news(news)
                     
                     if analysis_result['success']:
-                        analysis_info = f" | Análise: {analysis_result['sentiment']['label']}"
+                        sentiment_label = analysis_result['sentiment']['label']
+                        sentiment_score = analysis_result['sentiment']['score']
+                        logger.info(f"😊 Notícia {index}: Sentimento analisado - {sentiment_label} (score: {sentiment_score:.2f})")
+                        analysis_info = f" | Análise: {sentiment_label}"
                     else:
+                        logger.error(f"❌ Notícia {index}: Erro na análise de sentimento")
                         analysis_info = " | Análise: erro"
                 except Exception as analysis_error:
+                    logger.error(f"❌ Notícia {index}: Falha na análise - {str(analysis_error)}")
                     analysis_info = f" | Análise: falhou - {str(analysis_error)}"
                 
                 processed_count += 1
+                logger.info(f"✅ Notícia {index}: CONCLUÍDA - ID: {news.id}")
+                logger.info(f"📊 Progresso: {processed_count}/{total_count} notícias processadas")
+                
                 results.append({
                     'title': news.title,
                     'status': 'success',
@@ -1006,11 +1049,21 @@ def upload_news_json(request):
                 })
                 
             except Exception as e:
+                logger.error(f"💥 Notícia {index}: ERRO CRÍTICO - {str(e)}")
                 results.append({
                     'content_preview': news_item.get('noticia', 'Conteúdo não disponível')[:100] + '...',
                     'status': 'error',
                     'message': f'Erro ao processar: {str(e)}'
                 })
+        
+        # Log final do processamento
+        logger.info(f"=" * 60)
+        logger.info(f"🏁 PROCESSAMENTO FINALIZADO")
+        logger.info(f"✅ Sucessos: {processed_count}")
+        logger.info(f"❌ Falhas: {total_count - processed_count}")
+        logger.info(f"📊 Total: {total_count}")
+        logger.info(f"⏰ Concluído em: {datetime.now().isoformat()}")
+        logger.info(f"=" * 60)
         
         return Response({
             'message': f'Processamento concluído. {processed_count} de {total_count} notícias foram criadas.',

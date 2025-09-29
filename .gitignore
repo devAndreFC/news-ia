@@ -19,7 +19,6 @@ media/
 
 # Environment variables / secrets
 .env
-.env.*
 
 # Docker
 *.log

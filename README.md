@@ -138,10 +138,10 @@ make setup
 docker compose up -d --build
 ```
 
-### 4. Configure Banco de Dados
+### 4. Crie o seu superusuer para enviar notícias no formato json
 ```bash
-make migrate
-make createsuperuser  # Opcional: cria usuário admin
+make createsuperuser
+- Arquivo json com exemplo das noticias está na raiz do projeto: `test-20-news.json`
 ```
 
 ### 5. Acesse a Aplicação
@@ -244,14 +244,7 @@ make migrate       # Executa migrações
 make createsuperuser # Cria superusuário
 make logs          # Mostra logs de todos os serviços
 make clean         # Remove containers e volumes
-```
-
-### Docker Compose Manual
-```bash
-docker compose up -d --build    # Inicia com rebuild
-docker compose down            # Para serviços
-docker compose logs -f         # Logs em tempo real
-docker compose exec backend python manage.py [command]
+make logs_backend  # Ver logs do backend
 ```
 
 ### Acessos

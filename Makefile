@@ -66,6 +66,7 @@ help:
 setup:
 	$(call show_message,Subindo todos os serviços...)
 	$(DOCKER_COMPOSE) up -d --build
+	$(DOCKER_COMPOSE) exec $(BACKEND_SERVICE) python manage.py migrate
 	$(call show_message,Serviços iniciados com sucesso!)
 	$(call show_message,Frontend disponível em: http://localhost:3000)
 	$(call show_message,Backend disponível em: http://localhost:9000)
